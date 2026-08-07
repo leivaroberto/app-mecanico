@@ -15,7 +15,7 @@
 
 <div class="container mt-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="header-title">🔧 Taller "El Chamo"</h2>
+        <h2 class="header-title">🔧 Taller "El Tuerca"</h2>
         <button class="btn btn-outline-danger btn-sm">Cerrar Sesión</button>
     </div>
 
@@ -24,16 +24,16 @@
             <div class="card p-4">
                 <h4 class="mb-4 text-center">Registrar Nuevo Mantenimiento</h4>
                 
-                <form action="#" method="POST">
+                <form id="mantenimientoForm">
                     <h5 class="text-secondary border-bottom pb-2">Datos del Cliente</h5>
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label">Nombre del Cliente</label>
-                            <input type="text" class="form-control" placeholder="Ej. Juan Pérez" required>
+                            <input type="text" class="form-control" id="nombre" placeholder="Ej. Juan Pérez" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Teléfono (WhatsApp)</label>
-                            <input type="tel" class="form-control" placeholder="+54 9 11 1234-5678" required>
+                            <input type="tel" class="form-control" id="telefono" placeholder="+54 9 11 1234-5678" required>
                         </div>
                     </div>
 
@@ -41,11 +41,11 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label">Patente / Dominio</label>
-                            <input type="text" class="form-control text-uppercase" placeholder="AB 123 CD" required>
+                            <input type="text" class="form-control text-uppercase" id="patente" placeholder="AB 123 CD" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Kilometraje Actual</label>
-                            <input type="number" class="form-control" placeholder="Ej. 50000" required>
+                            <input type="number" class="form-control" id="kilometraje" placeholder="Ej. 50000" required>
                         </div>
                     </div>
 
@@ -53,17 +53,17 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label">Fecha del Servicio</label>
-                            <input type="date" class="form-control" required>
+                            <input type="date" class="form-control" id="fecha_servicio" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Fecha Próximo Mantenimiento</label>
-                            <input type="date" class="form-control" required>
-                            <div class="form-text text-success">Se enviará un aviso por WhatsApp 1 semana antes.</div>
+                            <input type="date" class="form-control" id="fecha_proximo" required>
+                            <div class="form-text text-success">Se enviará un aviso por SMS 1 semana antes.</div>
                         </div>
                     </div>
                     <div class="mb-4">
                         <label class="form-label">Trabajo Realizado</label>
-                        <textarea class="form-control" rows="3" placeholder="Ej. Cambio de aceite 10w40, filtros de aire y combustible..." required></textarea>
+                        <textarea class="form-control" id="trabajo" rows="3" placeholder="Ej. Cambio de aceite 10w40..." required></textarea>
                     </div>
 
                     <div class="d-grid">
@@ -76,5 +76,46 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    document.getElementById('mantenimientoForm').addEventListener('submit', async function(e) {
+        e.preventDefault(); // Evita que la página recargue al hacer clic
+
+        // 1. Recolectar todos los datos que escribió el mecánico
+        const datos = {
+            nombre: document.getElementById('nombre').value,
+            telefono: document.getElementById('telefono').value,
+            patente: document.getElementById('patente').value,
+            kilometraje: document.getElementById('kilometraje').value,
+            fecha_servicio: document.getElementById('fecha_servicio').value,
+            fecha_proximo: document.getElementById('fecha_proximo').value,
+            trabajo: document.getElementById('trabajo').value
+        };
+
+        try {
+            // 2. Enviar los datos a tu servidor en Render
+            const respuesta = await fetch('https://app-mecanico.onrender.com/api/guardar-mantenimiento', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(datos)
+            });
+
+            const resultado = await respuesta.json();
+            
+            // 3. Mostrar un aviso si todo salió bien
+            if(resultado.exito) {
+                alert('¡Excelente! ' + resultado.mensaje);
+                document.getElementById('mantenimientoForm').reset(); // Limpiar el formulario
+            } else {
+                alert('Hubo un error al guardar los datos.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('No se pudo conectar con el servidor en la nube.');
+        }
+    });
+</script>
 </body>
 </html>
