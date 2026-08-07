@@ -14,32 +14,35 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 app.post('/api/guardar-mantenimiento', async (req, res) => {
     const datos = req.body;
-    console.log("Recibiendo datos del cliente:", datos.nombre);
+    console.log("Recibiendo datos del vehículo:", datos.patente);
 
     try {
-        // 1. Guardar el cliente y pedir explícitamente que devuelva el registro completo
-        const { data: clienteInsertado, error: errorCliente } = await supabase
-            .from('Clientes_Vehiculos')
+        // 1. Insertar cliente y vehículo
+        const { data: clienteData, error: errorCliente } = await supabase
+            .from('clientes_vehiculos')
             .insert({
-                id_taller: 1, 
+                id_taller: 1,
                 nombre_completo: datos.nombre,
                 telefono: datos.telefono,
-                patente: datos.patente
+                patente: datos.patente.toUpperCase()
             })
-            .select()
-            .single(); // Forzamos a que devuelva un solo objeto limpio
+            .select();
 
         if (errorCliente) {
-            console.error("❌ Error Supabase (Cliente):", errorCliente);
+            console.error("Error al insertar cliente:", errorCliente);
             return res.status(400).json({ exito: false, mensaje: 'Error al registrar cliente: ' + errorCliente.message });
         }
 
-        const id_cliente = clienteInsertado.id_cliente;
-        console.log("✔ Cliente guardado con éxito. ID obtenido:", id_cliente);
+        if (!clienteData || clienteData.length === 0) {
+            return res.status(400).json({ exito: false, mensaje: 'No se pudo obtener el ID del cliente registrado.' });
+        }
 
-        // 2. Guardar el mantenimiento usando el ID obtenido
+        const id_cliente = clienteData[0].id_cliente;
+        console.log("Cliente registrado con ID:", id_cliente);
+
+        // 2. Insertar mantenimiento vinculado
         const { error: errorMantenimiento } = await supabase
-            .from('Mantenimientos')
+            .from('mantenimientos')
             .insert({
                 id_cliente: id_cliente,
                 fecha_actual: datos.fecha_servicio,
@@ -49,15 +52,15 @@ app.post('/api/guardar-mantenimiento', async (req, res) => {
             });
 
         if (errorMantenimiento) {
-            console.error("❌ Error Supabase (Mantenimiento):", errorMantenimiento);
+            console.error("Error al insertar mantenimiento:", errorMantenimiento);
             return res.status(400).json({ exito: false, mensaje: 'Error al registrar mantenimiento: ' + errorMantenimiento.message });
         }
 
-        console.log("✔ Mantenimiento guardado y vinculado correctamente.");
-        res.json({ exito: true, mensaje: '¡Cliente y mantenimiento grabados en Supabase con éxito!' });
+        console.log("¡Mantenimiento guardado con éxito!");
+        res.json({ exito: true, mensaje: '¡Cliente y mantenimiento guardados en Supabase!' });
 
-    } catch (error) {
-        console.error("❌ Error interno crítico:", error);
+    } catch (err) {
+        console.error("Error crítico en servidor:", err);
         res.status(500).json({ exito: false, mensaje: 'Error interno en el servidor.' });
     }
 });
