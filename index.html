@@ -95,12 +95,12 @@
         try {
             // 2. Enviar los datos a tu servidor en Render
             const respuesta = await fetch('https://app-mecanico.onrender.com/api/guardar-mantenimiento', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(datos)
-            });
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(datos)
+});
 
             const resultado = await respuesta.json();
             
