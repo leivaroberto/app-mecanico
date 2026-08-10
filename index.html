@@ -3,39 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AppMecanico - Acceso de Talleres</title>
+    <title>AppMecanico - Panel de Taller</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background-color: #f4f7f6; }
-        .card { border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .card { border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
         .header-title { color: #2c3e50; font-weight: bold; }
         .oculto { display: none !important; }
+        .nav-tabs .nav-link { font-weight: 600; color: #6c757d; }
+        .nav-tabs .nav-link.active { color: #2b6cb0; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="container mt-5 mb-5">
+<div class="container mt-4 mb-5">
 
     <div id="seccionLogin" class="row justify-content-center mt-5">
         <div class="col-md-5">
             <div class="card p-4 text-center">
                 <h2 class="header-title mb-1">🔧 AppMecanico</h2>
-                <p class="text-muted mb-4">Acceso de Taller</p>
-                
+                <p class="text-muted mb-4">Acceso Seguro de Taller</p>
                 <form id="loginForm" class="text-start">
                     <div class="mb-3">
                         <label class="form-label">Correo Electrónico</label>
-                        <input type="email" class="form-control" id="loginEmail" placeholder="admin@taller.com" required>
+                        <input type="email" class="form-control" id="loginEmail" required>
                     </div>
                     <div class="mb-4">
                         <label class="form-label">Contraseña</label>
-                        <input type="password" class="form-control" id="loginPassword" placeholder="******" required>
+                        <input type="password" class="form-control" id="loginPassword" required>
                     </div>
                     <div class="d-grid gap-2">
-                        <button type="submit" id="btnIngresar" class="btn btn-dark btn-lg">Ingresar con Clave</button>
-                        <button type="button" id="btnBiometria" class="btn btn-outline-primary btn-lg mt-2">
-                            👆 Entrar con Huella / Face ID
-                        </button>
+                        <button type="submit" id="btnIngresar" class="btn btn-dark btn-lg">Ingresar</button>
+                        <button type="button" id="btnBiometria" class="btn btn-outline-primary mt-2">👆 Entrar con Huella</button>
                     </div>
                 </form>
             </div>
@@ -48,100 +47,122 @@
             <button id="btnCerrarSesion" class="btn btn-outline-danger btn-sm">Cerrar Sesión</button>
         </div>
 
-        <div class="row justify-content-center">
-            <div class="col-md-8">
+        <ul class="nav nav-tabs mb-4" id="appTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab">📊 Inicio</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="buscar-tab" data-bs-toggle="tab" data-bs-target="#buscar" type="button" role="tab">🔍 Buscar Historial</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="nuevo-tab" data-bs-toggle="tab" data-bs-target="#nuevo" type="button" role="tab">📝 Registrar Servicio</button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            
+            <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
                 
-                <div class="card p-4 mb-4 bg-light">
-                    <h5 class="header-title mb-3">🔍 Buscar Historial Vehicular</h5>
-                    <div class="input-group">
-                        <input type="text" id="buscarPatente" class="form-control text-uppercase" placeholder="Ingrese Patente (ej: AA123CD)">
-                        <button class="btn btn-primary" onclick="buscarPorPatente()">Buscar</button>
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card bg-primary text-white p-3 text-center">
+                            <h5>Vehículos Atendidos este Mes</h5>
+                            <h2 id="statVehiculos">--</h2>
+                        </div>
                     </div>
-                    <div id="resultadoBusqueda" class="mt-3"></div>
+                    <div class="col-md-6">
+                        <div class="card bg-success text-white p-3 text-center mt-3 mt-md-0">
+                            <h5>Ingresos Generados este Mes</h5>
+                            <h2 id="statIngresos">$ --</h2>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="card shadow-sm mb-4">
                     <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">🔔 Recordatorios / Avisos de la Semana</h5>
+                        <h5 class="mb-0">🔔 Avisos de la Semana</h5>
                         <button class="btn btn-sm btn-outline-dark" onclick="cargarAvisosSemana()">🔄 Actualizar</button>
                     </div>
                     <div class="card-body">
-                        <p class="text-muted small">Clientes que tienen próximo mantenimiento programado dentro de los próximos 7 días:</p>
                         <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>Fecha Próxima</th>
-                                        <th>Cliente</th>
-                                        <th>Patente</th>
-                                        <th>Servicio a realizar</th>
-                                        <th>Acción</th>
+                                        <th>Fecha</th><th>Cliente</th><th>Patente</th><th>Servicio</th><th>Acción</th>
                                     </tr>
                                 </thead>
-                                <tbody id="tablaAvisosBody">
-                                    <tr>
-                                        <td colspan="5" class="text-center text-muted">Haz clic en actualizar para cargar los avisos.</td>
-                                    </tr>
-                                </tbody>
+                                <tbody id="tablaAvisosBody"></tbody>
                             </table>
                         </div>
                     </div>
                 </div>
+            </div>
 
+            <div class="tab-pane fade" id="buscar" role="tabpanel">
+                <div class="card p-4 mb-4 bg-light">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="header-title mb-0">Buscador Vehicular</h5>
+                        <button class="btn btn-sm btn-secondary" onclick="limpiarBusqueda()">❌ Limpiar Búsqueda</button>
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="buscarPatente" class="form-control text-uppercase" placeholder="Ingrese Patente (ej: AA123CD)">
+                        <button class="btn btn-primary" onclick="buscarPorPatente()">Buscar</button>
+                    </div>
+                    <div id="resultadoBusqueda" class="mt-4"></div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="nuevo" role="tabpanel">
                 <div class="card p-4">
                     <h4 class="mb-4 text-center">Registrar Nuevo Mantenimiento</h4>
-                    
                     <form id="mantenimientoForm">
-                        <h5 class="text-secondary border-bottom pb-2">Datos del Cliente</h5>
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">Nombre del Cliente</label>
-                                <input type="text" class="form-control" id="nombre" placeholder="Ej: Juan Pérez" required>
+                                <input type="text" class="form-control" id="nombre" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Teléfono (WhatsApp)</label>
-                                <input type="tel" class="form-control" id="telefono" placeholder="Ej: +5491122334455" required>
+                                <input type="tel" class="form-control" id="telefono" required>
                             </div>
                         </div>
-
-                        <h5 class="text-secondary border-bottom pb-2 mt-4">Datos del Vehículo</h5>
                         <div class="row mb-3">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label">Patente / Dominio</label>
-                                <input type="text" class="form-control text-uppercase" id="patente" placeholder="AB123CD" required>
+                                <input type="text" class="form-control text-uppercase" id="patente" required>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Kilometraje Actual</label>
-                                <input type="number" class="form-control" id="kilometraje" placeholder="Ej: 85000" required>
+                            <div class="col-md-4">
+                                <label class="form-label">Kilometraje</label>
+                                <input type="number" class="form-control" id="kilometraje" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Costo Total ($)</label>
+                                <input type="number" class="form-control bg-light text-success fw-bold" id="costo" placeholder="Ej: 45000" required>
                             </div>
                         </div>
-
-                        <h5 class="text-secondary border-bottom pb-2 mt-4">Mantenimiento</h5>
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">Fecha del Servicio</label>
                                 <input type="date" class="form-control" id="fecha_servicio" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Fecha Próximo Mantenimiento</label>
+                                <label class="form-label">Próximo Mantenimiento</label>
                                 <input type="date" class="form-control" id="fecha_proximo" required>
                             </div>
                         </div>
                         <div class="mb-4">
                             <label class="form-label">Trabajo Realizado</label>
-                            <textarea class="form-control" id="trabajo" rows="3" placeholder="Ej: Cambio de aceite y filtros" required></textarea>
+                            <textarea class="form-control" id="trabajo" rows="2" required></textarea>
                         </div>
-
                         <div class="d-grid">
                             <button type="submit" class="btn btn-success btn-lg">Guardar Mantenimiento</button>
                         </div>
                     </form>
                 </div>
-
             </div>
+
         </div>
     </div>
-
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -152,374 +173,213 @@
     let nombreTallerActual = "Taller Mecánico";
     let ultimosRegistrosEncontrados = [];
 
-    // Detectar soporte de biometría al cargar
+    // --- LOGICA DE LOGIN Y BIOMETRIA ---
     window.addEventListener('DOMContentLoaded', () => {
-        if (!window.PublicKeyCredential) {
-            document.getElementById('btnBiometria').style.display = 'none';
-        }
+        if (!window.PublicKeyCredential) document.getElementById('btnBiometria').style.display = 'none';
     });
 
-    // 1. Login Tradicional
-    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    document.getElementById('loginForm').addEventListener('submit', async e => {
         e.preventDefault();
-        const email = document.getElementById('loginEmail').value;
-        const password = document.getElementById('loginPassword').value;
-
-        await ejecutarLogin(email, password);
+        await ejecutarLogin(document.getElementById('loginEmail').value, document.getElementById('loginPassword').value);
     });
 
-    // 2. Login con Huella / Face ID
     document.getElementById('btnBiometria').addEventListener('click', async () => {
-        const emailGuardado = localStorage.getItem('taller_email_biometrico');
-        const passGuardada = localStorage.getItem('taller_pass_biometrico');
-        
-        if (!emailGuardado || !passGuardada) {
-            alert('Primero debes ingresar una vez con tu correo y contraseña para vincular tu huella.');
-            return;
-        }
-
-        try {
-            alert('Por favor coloca tu huella o confirma con Face ID...');
-            await ejecutarLogin(emailGuardado, passGuardada);
-        } catch (err) {
-            console.error("Error al leer huella:", err);
-            alert("No se pudo verificar la huella.");
-        }
+        const e = localStorage.getItem('taller_email_biometrico');
+        const p = localStorage.getItem('taller_pass_biometrico');
+        if (!e || !p) return alert('Primero ingresa con correo y clave para vincular huella.');
+        await ejecutarLogin(e, p);
     });
 
-    // Conectar con Backend para Login
     async function ejecutarLogin(email, password) {
-        const btnIngresar = document.getElementById('btnIngresar');
-        btnIngresar.disabled = true;
-        btnIngresar.innerText = "Verificando...";
-
+        const btn = document.getElementById('btnIngresar');
+        btn.disabled = true; btn.innerText = "Verificando...";
         try {
-            const respuesta = await fetch(`${API_URL}/api/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            const res = await fetch(`${API_URL}/api/login`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
             });
-
-            const resultado = await respuesta.json();
-
-            if (resultado.exito) {
-                tallerActualId = resultado.id_taller;
-                nombreTallerActual = resultado.nombre_taller || "Taller Mecánico";
-                
+            const data = await res.json();
+            if (data.exito) {
+                tallerActualId = data.id_taller;
+                nombreTallerActual = data.nombre_taller || "Taller Mecánico";
                 localStorage.setItem('taller_email_biometrico', email);
                 localStorage.setItem('taller_pass_biometrico', password);
-
+                
                 document.getElementById('tituloTaller').innerText = "🔧 " + nombreTallerActual;
                 document.getElementById('seccionLogin').classList.add('oculto');
                 document.getElementById('seccionApp').classList.remove('oculto');
 
                 cargarAvisosSemana();
-            } else {
-                alert(resultado.mensaje || 'Credenciales incorrectas');
-            }
+                cargarEstadisticas();
+            } else alert(data.mensaje || 'Credenciales incorrectas');
         } catch (error) {
-            console.error('Error:', error);
-            alert('No se pudo conectar con el servidor.');
+            alert('Error de conexión.');
         } finally {
-            btnIngresar.disabled = false;
-            btnIngresar.innerText = "Ingresar con Clave";
+            btn.disabled = false; btn.innerText = "Ingresar";
         }
     }
 
-    // 3. Guardar Mantenimiento
-    document.getElementById('mantenimientoForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
+    // --- DASHBOARD Y ESTADÍSTICAS ---
+    async function cargarEstadisticas() {
+        try {
+            const res = await fetch(`${API_URL}/api/estadisticas?id_taller=${tallerActualId}`);
+            const data = await res.json();
+            if(data.exito){
+                document.getElementById('statVehiculos').innerText = data.totalVehiculos;
+                document.getElementById('statIngresos').innerText = `$ ${data.ingresosMes.toLocaleString()}`;
+            }
+        } catch(e) { console.error("Error estadísticas:", e); }
+    }
 
+    async function cargarAvisosSemana() {
+        const tbody = document.getElementById('tablaAvisosBody');
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr>';
+        try {
+            const res = await fetch(`${API_URL}/avisos-semana?id_taller=${tallerActualId}`);
+            const avisos = await res.json();
+            if (!avisos.length) return tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success">¡Sin vencimientos cercanos!</td></tr>';
+            
+            tbody.innerHTML = avisos.map(i => {
+                const nombre = i.clientes?.nombre || '';
+                const tel = i.clientes?.telefono || '';
+                const pat = i.vehiculos?.patente || '';
+                const mje = encodeURIComponent(`Hola ${nombre}, te recordamos desde el Taller que tu vehículo (${pat}) tiene programado su mantenimiento para el ${i.fecha_proximo}.`);
+                return `<tr>
+                    <td><span class="badge bg-danger">${i.fecha_proximo}</span></td>
+                    <td>${nombre}</td><td><span class="badge bg-secondary">${pat}</span></td>
+                    <td>${i.mantenimiento_realizado}</td>
+                    <td>${tel ? `<a href="https://wa.me/${tel.replace(/\D/g, '')}?text=${mje}" target="_blank" class="btn btn-sm btn-success">📲 WA</a>` : '-'}</td>
+                </tr>`;
+            }).join('');
+        } catch (e) { tbody.innerHTML = '<tr><td colspan="5" class="text-danger">Error.</td></tr>'; }
+    }
+
+    // --- BUSQUEDA Y ELIMINACIÓN ---
+    function limpiarBusqueda() {
+        document.getElementById('buscarPatente').value = '';
+        document.getElementById('resultadoBusqueda').innerHTML = '';
+        ultimosRegistrosEncontrados = [];
+    }
+
+    async function buscarPorPatente() {
+        const patente = document.getElementById('buscarPatente').value.trim();
+        const contenedor = document.getElementById('resultadoBusqueda');
+        if (!patente) return alert("Ingrese patente.");
+        contenedor.innerHTML = "<p class='text-muted'>Buscando...</p>";
+
+        try {
+            const res = await fetch(`${API_URL}/api/registros/buscar?patente=${patente}&id_taller=${tallerActualId}`);
+            const data = await res.json();
+            if (data.exito && data.registros.length > 0) {
+                ultimosRegistrosEncontrados = data.registros;
+                let unificados = [];
+                let info = data.registros[0];
+                data.registros.forEach(r => unificados = unificados.concat(r.mantenimientos || []));
+                unificados.sort((a, b) => new Date(b.fecha_actual) - new Date(a.fecha_actual));
+                info.todosMantenimientos = unificados;
+
+                let html = `
+                    <div class='d-flex justify-content-between align-items-center mb-3 bg-white p-3 rounded shadow-sm border'>
+                        <div>
+                            <h5 class='mb-0'>${info.nombre_completo}</h5>
+                            <small class='text-muted'>📱 ${info.telefono} | 🚗 ${info.patente}</small>
+                        </div>
+                        <div>
+                            <button class='btn btn-success btn-sm' onclick='imprimir(0, true)'>📋 Todo</button>
+                            <button class='btn btn-dark btn-sm' onclick='imprimir(0, false)'>📄 Último</button>
+                        </div>
+                    </div><ul class='list-group'>`;
+
+                if (unificados.length > 0) {
+                    unificados.forEach(m => {
+                        html += `<li class='list-group-item'>
+                            <div class="d-flex justify-content-between">
+                                <div>📅 ${m.fecha_actual} | 🚗 ${m.kilometraje} km | 💰 $${m.costo || 0}<br>🔧 ${m.trabajo_realizado}</div>
+                                <button class="btn btn-sm btn-outline-danger align-self-center" onclick="eliminarRegistro(${m.id_servicio})">🗑️ Eliminar</button>
+                            </div>
+                        </li>`;
+                    });
+                } else html += `<li class='list-group-item'>Sin servicios.</li>`;
+                contenedor.innerHTML = html + "</ul>";
+            } else contenedor.innerHTML = "<div class='alert alert-warning'>No encontrado.</div>";
+        } catch (e) { contenedor.innerHTML = "<div class='alert alert-danger'>Error.</div>"; }
+    }
+
+    async function eliminarRegistro(idServicio) {
+        if(!confirm('¿Estás seguro de que deseas ELIMINAR este registro para siempre?')) return;
+        try {
+            const res = await fetch(`${API_URL}/api/mantenimiento/${idServicio}`, { method: 'DELETE' });
+            const data = await res.json();
+            if(data.exito) {
+                alert('Registro eliminado.');
+                buscarPorPatente(); // Refrescar búsqueda
+                cargarEstadisticas(); // Refrescar montos
+            } else alert('Error al eliminar');
+        } catch(e) { alert('Error de conexión'); }
+    }
+
+    // --- GUARDAR NUEVO ---
+    document.getElementById('mantenimientoForm').addEventListener('submit', async e => {
+        e.preventDefault();
         const datos = {
             id_taller: tallerActualId,
             nombre: document.getElementById('nombre').value,
             telefono: document.getElementById('telefono').value,
             patente: document.getElementById('patente').value,
             kilometraje: document.getElementById('kilometraje').value,
+            costo: document.getElementById('costo').value,
             fecha_servicio: document.getElementById('fecha_servicio').value,
             fecha_proximo: document.getElementById('fecha_proximo').value,
             trabajo: document.getElementById('trabajo').value
         };
 
         try {
-            const respuesta = await fetch(`${API_URL}/api/guardar-mantenimiento`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(datos)
+            const res = await fetch(`${API_URL}/api/guardar-mantenimiento`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos)
             });
-
-            const resultado = await respuesta.json();
-
-            if (resultado.exito) {
-                alert('¡Mantenimiento guardado con éxito!');
-                
-                let enviar = confirm('¿Deseas abrir WhatsApp para enviarle el recordatorio al cliente?');
-                if (enviar) {
-                    let mensaje = `¡Hola ${datos.nombre}! Te escribimos del taller para recordarte que tu vehículo (${datos.patente}) se acerca a su mantenimiento el ${datos.fecha_proximo}.`;
-                    let urlWhatsApp = `https://api.whatsapp.com/send?phone=${encodeURIComponent(datos.telefono)}&text=${encodeURIComponent(mensaje)}`;
-                    window.open(urlWhatsApp, '_blank');
-                }
-
+            const data = await res.json();
+            if (data.exito) {
+                alert('¡Guardado con éxito!');
+                if (confirm('¿Enviar WhatsApp?')) window.open(`https://api.whatsapp.com/send?phone=${datos.telefono}&text=Hola ${datos.nombre}...`, '_blank');
                 document.getElementById('mantenimientoForm').reset();
                 cargarAvisosSemana();
-            } else {
-                alert('Error al guardar: ' + resultado.mensaje);
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Error de conexión al guardar.');
-        }
+                cargarEstadisticas();
+                // Volver a la pestaña principal
+                const triggerEl = document.querySelector('#dashboard-tab');
+                bootstrap.Tab.getOrCreateInstance(triggerEl).show();
+            } else alert('Error: ' + data.mensaje);
+        } catch (err) { alert('Error de conexión.'); }
     });
 
-    // 4. Buscar por Patente (Agrupa intervenciones y muestra dos botones de impresión)
-    async function buscarPorPatente() {
-        const patente = document.getElementById('buscarPatente').value.trim();
-        const contenedorResultados = document.getElementById('resultadoBusqueda');
+    // --- IMPRESIÓN ---
+    function imprimir(index, completo) {
+        const v = ultimosRegistrosEncontrados[index];
+        if (!v || !v.todosMantenimientos.length) return alert("Sin datos.");
+        
+        const data = completo ? v.todosMantenimientos : [v.todosMantenimientos[0]];
+        let trs = data.map((m, i) => `<tr>
+            <td style="padding:10px; border-bottom:1px solid #ddd;">#${data.length - i}</td>
+            <td style="padding:10px; border-bottom:1px solid #ddd;">${m.fecha_actual}</td>
+            <td style="padding:10px; border-bottom:1px solid #ddd;">${m.kilometraje} km</td>
+            <td style="padding:10px; border-bottom:1px solid #ddd;">$${m.costo || 0}</td>
+            <td style="padding:10px; border-bottom:1px solid #ddd;">${m.trabajo_realizado}</td>
+        </tr>`).join('');
 
-        if (!patente) {
-            alert("Ingrese una patente para buscar.");
-            return;
-        }
-
-        contenedorResultados.innerHTML = "<p class='text-muted'>Buscando en la base de datos...</p>";
-
-        try {
-            const res = await fetch(`${API_URL}/api/registros/buscar?patente=${patente}&id_taller=${tallerActualId}`);
-            const data = await res.json();
-
-            if (data.exito && data.registros.length > 0) {
-                ultimosRegistrosEncontrados = data.registros;
-
-                // Agrupar los mantenimientos de todos los registros de la misma patente
-                let mantenimientosUnificados = [];
-                let clienteInfo = data.registros[0];
-
-                data.registros.forEach(item => {
-                    if (item.mantenimientos && item.mantenimientos.length > 0) {
-                        mantenimientosUnificados = mantenimientosUnificados.concat(item.mantenimientos);
-                    }
-                });
-
-                // Ordenar mantenimientos de más reciente a más antiguo
-                mantenimientosUnificados.sort((a, b) => new Date(b.fecha_actual) - new Date(a.fecha_actual));
-
-                // Guardar la lista consolidada en el objeto
-                clienteInfo.todosMantenimientos = mantenimientosUnificados;
-
-                let html = `
-                    <div class='card p-3 border-secondary'>
-                        <div class='d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2'>
-                            <div>
-                                <h5 class='mb-1'><strong>Cliente:</strong> ${clienteInfo.nombre_completo}</h5>
-                                <p class='mb-0 text-muted'>📱 <strong>Teléfono:</strong> ${clienteInfo.telefono} | 🚗 <strong>Patente:</strong> <span class='badge bg-dark fs-6'>${clienteInfo.patente}</span></p>
-                            </div>
-                            <div class='d-flex gap-2'>
-                                <button class='btn btn-success btn-sm' onclick='imprimirHistorialCompleto(0)'>
-                                    📋 Imprimir Historial Completo (${mantenimientosUnificados.length})
-                                </button>
-                                <button class='btn btn-outline-dark btn-sm' onclick='imprimirUltimoServicio(0)'>
-                                    📄 Imprimir Último Servicio
-                                </button>
-                            </div>
-                        </div>
-
-                        <h6 class='border-bottom pb-2 mt-2'><strong>Historial de Intervenciones:</strong></h6>
-                        <ul class='list-group list-group-flush'>`;
-
-                if (mantenimientosUnificados.length > 0) {
-                    mantenimientosUnificados.forEach(m => {
-                        html += `
-                            <li class='list-group-item px-0'>
-                                📅 <strong>Fecha:</strong> ${m.fecha_actual || '-'} | 🚗 <strong>Km:</strong> ${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'} <br>
-                                🔧 <strong>Trabajo:</strong> ${m.trabajo_realizado || '-'} <br>
-                                🔔 <strong class='text-danger'>Próximo Mantenimiento:</strong> ${m.fecha_proximo || '-'}
-                            </li>`;
-                    });
-                } else {
-                    html += `<li class='list-group-item text-muted'>No hay mantenimientos registrados para este vehículo.</li>`;
-                }
-
-                html += `</ul></div>`;
-                contenedorResultados.innerHTML = html;
-
-            } else {
-                contenedorResultados.innerHTML = "<div class='alert alert-warning mt-2'>No se encontraron registros para esa patente.</div>";
-            }
-        } catch (err) {
-            console.error(err);
-            contenedorResultados.innerHTML = "<div class='alert alert-danger mt-2'>Error al conectar con el servidor.</div>";
-        }
-    }
-
-    // 5. A) IMPRIMIR HISTORIAL COMPLETO
-    function imprimirHistorialCompleto(index) {
-        const vehiculo = ultimosRegistrosEncontrados[index];
-        if (!vehiculo || !vehiculo.todosMantenimientos) return;
-
-        let ventana = window.open('', '_blank', 'width=850,height=700');
-        let mantenimientosHTML = '';
-
-        vehiculo.todosMantenimientos.forEach((m, i) => {
-            mantenimientosHTML += `
-                <tr>
-                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; font-weight: bold;">#${vehiculo.todosMantenimientos.length - i}</td>
-                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${m.fecha_actual || '-'}</td>
-                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'}</td>
-                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${m.trabajo_realizado || '-'}</td>
-                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #c53030; font-weight: bold;">${m.fecha_proximo || '-'}</td>
-                </tr>`;
-        });
-
-        abrirVentanaImpresion(ventana, "Historial Clínico Vehicular - Completo", vehiculo, mantenimientosHTML);
-    }
-
-    // 5. B) IMPRIMIR ÚLTIMO SERVICIO REALIZADO
-    function imprimirUltimoServicio(index) {
-        const vehiculo = ultimosRegistrosEncontrados[index];
-        if (!vehiculo || !vehiculo.todosMantenimientos || vehiculo.todosMantenimientos.length === 0) {
-            alert("No hay mantenimientos para imprimir.");
-            return;
-        }
-
-        const ultimo = vehiculo.todosMantenimientos[0];
-        let ventana = window.open('', '_blank', 'width=850,height=700');
-
-        let mantenimientosHTML = `
-            <tr>
-                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; font-weight: bold;">1</td>
-                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${ultimo.fecha_actual || '-'}</td>
-                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${ultimo.kilometraje ? ultimo.kilometraje.toLocaleString() + ' km' : '-'}</td>
-                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${ultimo.trabajo_realizado || '-'}</td>
-                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #c53030; font-weight: bold;">${ultimo.fecha_proximo || '-'}</td>
-            </tr>`;
-
-        abrirVentanaImpresion(ventana, "Comprobante de Último Servicio Realizado", vehiculo, mantenimientosHTML);
-    }
-
-    // Función auxiliar para maquetar la hoja de impresión
-    function abrirVentanaImpresion(ventana, tituloDocumento, vehiculo, mantenimientosHTML) {
-        ventana.document.write(`
-            <!DOCTYPE html>
-            <html lang="es">
-            <head>
-                <meta charset="UTF-8">
-                <title>${tituloDocumento} - ${vehiculo.patente}</title>
-                <style>
-                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; color: #2d3748; }
-                    .header { text-align: center; border-bottom: 3px solid #2b6cb0; padding-bottom: 15px; margin-bottom: 25px; }
-                    .header h2 { margin: 0; color: #2b6cb0; font-size: 24px; text-transform: uppercase; }
-                    .header h3 { margin: 5px 0 0 0; color: #4a5568; font-size: 16px; font-weight: normal; }
-                    .info-card { background: #f7fafc; border: 1px solid #e2e8f0; border-left: 5px solid #2b6cb0; padding: 15px; border-radius: 6px; margin-bottom: 25px; display: flex; justify-content: space-between; }
-                    .patente-badge { font-size: 20px; font-weight: bold; background: #2d3748; color: #fff; padding: 4px 12px; border-radius: 4px; letter-spacing: 2px; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                    th { background-color: #2b6cb0; color: white; padding: 10px; text-align: left; font-size: 13px; text-transform: uppercase; }
-                    .footer { margin-top: 50px; text-align: center; font-size: 11px; color: #a0aec0; border-top: 1px solid #e2e8f0; padding-top: 15px; }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <h2>🔧 ${nombreTallerActual}</h2>
-                    <h3>${tituloDocumento}</h3>
-                </div>
-
-                <div class="info-card">
-                    <div>
-                        <div><strong>Cliente:</strong> ${vehiculo.nombre_completo}</div>
-                        <div><strong>Teléfono / WhatsApp:</strong> ${vehiculo.telefono}</div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div style="font-size: 12px; color: #718096; margin-bottom: 4px;">PATENTE</div>
-                        <span class="patente-badge">${vehiculo.patente}</span>
-                    </div>
-                </div>
-
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="text-align: center; width: 50px;">#</th>
-                            <th style="text-align: center; width: 110px;">Fecha</th>
-                            <th style="text-align: right; width: 110px;">Kilometraje</th>
-                            <th>Trabajo Realizado</th>
-                            <th style="text-align: center; width: 130px;">Próximo Servicio</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${mantenimientosHTML}
-                    </tbody>
-                </table>
-
-                <div class="footer">
-                    <p>Documento generado por AppMecanico para <strong>${nombreTallerActual}</strong> | ${new Date().toLocaleDateString('es-AR')}</p>
-                </div>
-
-                <script>
-                    window.onload = function() { window.print(); };
-                <\/script>
-            </body>
-            </html>
+        let win = window.open('', '_blank', 'width=850,height=700');
+        win.document.write(`
+            <html lang="es"><head><title>Ficha ${v.patente}</title>
+            <style>body{font-family:sans-serif; padding:20px;} table{width:100%; border-collapse:collapse; margin-top:20px;} th{background:#2b6cb0; color:#fff; padding:10px;}</style>
+            </head><body>
+            <h2>🔧 ${nombreTallerActual}</h2>
+            <p><strong>Cliente:</strong> ${v.nombre_completo} | <strong>Patente:</strong> ${v.patente}</p>
+            <table><tr><th>#</th><th>Fecha</th><th>Km</th><th>Costo</th><th>Trabajo</th></tr>${trs}</table>
+            <script>window.onload=()=>window.print();<\/script>
+            </body></html>
         `);
-        ventana.document.close();
+        win.document.close();
     }
 
-    // 6. Cargar Avisos de la Semana
-    async function cargarAvisosSemana() {
-        const tbody = document.getElementById('tablaAvisosBody');
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Cargando avisos...</td></tr>';
-
-        try {
-            const res = await fetch(`${API_URL}/avisos-semana?id_taller=${tallerActualId}`);
-            const avisos = await res.json();
-
-            if (!avisos || avisos.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success">¡Sin vencimientos en los próximos 7 días! 🎉</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = avisos.map(item => {
-                const clienteNombre = item.clientes ? item.clientes.nombre : 'Sin nombre';
-                const clienteTel = item.clientes ? item.clientes.telefono : '';
-                const patente = item.vehiculos ? item.vehiculos.patente : 'N/A';
-                const fecha = item.fecha_proximo || 'Sin fecha';
-                const servicio = item.mantenimiento_realizado || 'Mantenimiento preventivo';
-
-                const mensajeWA = encodeURIComponent(
-                    `Hola ${clienteNombre}, te recordamos desde el Taller que tu vehículo patente ${patente} tiene programado su próximo mantenimiento (${servicio}) para la fecha ${fecha}. ¡Escríbenos para agendar tu turno!`
-                );
-
-                const linkWA = clienteTel 
-                    ? `https://wa.me/${clienteTel.replace(/\D/g, '')}?text=${mensajeWA}`
-                    : '#';
-
-                return `
-                    <tr>
-                        <td><span class="badge bg-danger">${fecha}</span></td>
-                        <td><strong>${clienteNombre}</strong></td>
-                        <td><span class="badge bg-secondary">${patente}</span></td>
-                        <td>${servicio}</td>
-                        <td>
-                            ${clienteTel ? `
-                                <a href="${linkWA}" target="_blank" class="btn btn-sm btn-success">
-                                    📲 Enviar WhatsApp
-                                </a>
-                            ` : '<span class="text-muted">Sin teléfono</span>'}
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-
-        } catch (err) {
-            console.error('Error al cargar avisos:', err);
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al obtener avisos.</td></tr>';
-        }
-    }
-
-    // Cerrar sesión
-    document.getElementById('btnCerrarSesion').addEventListener('click', function() {
-        tallerActualId = null;
-        document.getElementById('seccionApp').classList.add('oculto');
-        document.getElementById('seccionLogin').classList.remove('oculto');
-        document.getElementById('loginForm').reset();
-    });
+    document.getElementById('btnCerrarSesion').addEventListener('click', () => location.reload());
 </script>
 </body>
 </html>
