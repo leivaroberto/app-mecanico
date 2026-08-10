@@ -273,7 +273,10 @@
     // Variable global temporal para guardar los últimos resultados de búsqueda
     let ultimosRegistrosEncontrados = [];
 
-    // 4. Buscar por Patente (Con botón de Resumen)
+ // Variable global para almacenar los datos encontrados en la última búsqueda
+    let ultimosRegistrosEncontrados = [];
+
+    // 4. Buscar por Patente (Agrupa intervenciones y muestra dos botones de impresión)
     async function buscarPorPatente() {
         const patente = document.getElementById('buscarPatente').value.trim();
         const contenedorResultados = document.getElementById('resultadoBusqueda');
@@ -283,7 +286,7 @@
             return;
         }
 
-        contenedorResultados.innerHTML = "<p class='text-muted'>Buscando...</p>";
+        contenedorResultados.innerHTML = "<p class='text-muted'>Buscando en la base de datos...</p>";
 
         try {
             const res = await fetch(`${API_URL}/api/registros/buscar?patente=${patente}&id_taller=${tallerActualId}`);
@@ -291,37 +294,59 @@
 
             if (data.exito && data.registros.length > 0) {
                 ultimosRegistrosEncontrados = data.registros;
-                let html = "<ul class='list-group mt-2'>";
-                
-                data.registros.forEach((cli, index) => {
-                    html += `<li class='list-group-item p-3'>
-                        <div class='d-flex justify-content-between align-items-center mb-2'>
-                            <div>
-                                <strong>Cliente:</strong> ${cli.nombre_completo} (${cli.telefono})<br>
-                                <strong>Patente:</strong> <span class='badge bg-dark fs-6'>${cli.patente}</span>
-                            </div>
-                            <button class='btn btn-outline-dark btn-sm' onclick='imprimirResumenVehiculo(${index})'>
-                                🖨️ Generar Resumen PDF
-                            </button>
-                        </div>
-                        <div class='mt-2'>`;
-                    
-                    if (cli.mantenimientos && cli.mantenimientos.length > 0) {
-                        cli.mantenimientos.forEach(m => {
-                            html += `<div class='border-top pt-2 mt-2 small'>
-                                📅 <strong>Fecha Servicio:</strong> ${m.fecha_actual} | 🚗 <strong>Km:</strong> ${m.kilometraje}<br>
-                                🔧 <strong>Trabajo:</strong> ${m.trabajo_realizado}<br>
-                                🔔 <strong>Próximo Mantenimiento:</strong> ${m.fecha_proximo}
-                            </div>`;
-                        });
-                    } else {
-                        html += `<small class='text-muted'>Sin servicios registrados</small>`;
-                    }
 
-                    html += `</div></li>`;
+                // Agrupar los mantenimientos de todos los registros de la misma patente
+                let mantenimientosUnificados = [];
+                let clienteInfo = data.registros[0]; // Tomamos los datos del cliente del primer registro
+
+                data.registros.forEach(item => {
+                    if (item.mantenimientos && item.mantenimientos.length > 0) {
+                        mantenimientosUnificados = mantenimientosUnificados.concat(item.mantenimientos);
+                    }
                 });
-                html += "</ul>";
+
+                // Ordenar mantenimientos de más reciente a más antiguo
+                mantenimientosUnificados.sort((a, b) => new Date(b.fecha_actual) - new Date(a.fecha_actual));
+
+                // Guardar la lista consolidada en el objeto para ser usada por los botones de impresión
+                clienteInfo.todosMantenimientos = mantenimientosUnificados;
+
+                let html = `
+                    <div class='card p-3 border-secondary'>
+                        <div class='d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2'>
+                            <div>
+                                <h5 class='mb-1'><strong>Cliente:</strong> ${clienteInfo.nombre_completo}</h5>
+                                <p class='mb-0 text-muted'>📱 <strong>Teléfono:</strong> ${clienteInfo.telefono} | 🚗 <strong>Patente:</strong> <span class='badge bg-dark fs-6'>${clienteInfo.patente}</span></p>
+                            </div>
+                            <div class='d-flex gap-2'>
+                                <button class='btn btn-success btn-sm' onclick='imprimirHistorialCompleto(0)'>
+                                    📋 Imprimir Historial Completo (${mantenimientosUnificados.length})
+                                </button>
+                                <button class='btn btn-outline-dark btn-sm' onclick='imprimirUltimoServicio(0)'>
+                                    📄 Imprimir Último Servicio
+                                </button>
+                            </div>
+                        </div>
+
+                        <h6 class='border-bottom pb-2 mt-2'><strong>Historial de Intervenciones:</strong></h6>
+                        <ul class='list-group list-group-flush'>`;
+
+                if (mantenimientosUnificados.length > 0) {
+                    mantenimientosUnificados.forEach(m => {
+                        html += `
+                            <li class='list-group-item px-0'>
+                                📅 <strong>Fecha:</strong> ${m.fecha_actual || '-'} | 🚗 <strong>Km:</strong> ${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'} <br>
+                                🔧 <strong>Trabajo:</strong> ${m.trabajo_realizado || '-'} <br>
+                                🔔 <strong class='text-danger'>Próximo Mantenimiento:</strong> ${m.fecha_proximo || '-'}
+                            </li>`;
+                    });
+                } else {
+                    html += `<li class='list-group-item text-muted'>No hay mantenimientos registrados para este vehículo.</li>`;
+                }
+
+                html += `</ul></div>`;
                 contenedorResultados.innerHTML = html;
+
             } else {
                 contenedorResultados.innerHTML = "<div class='alert alert-warning mt-2'>No se encontraron registros para esa patente.</div>";
             }
@@ -331,106 +356,115 @@
         }
     }
 
-  // Función para Imprimir / Generar PDF del Historial COMPLETO del Vehículo
-function imprimirResumenVehiculo(index) {
-    const vehiculo = ultimosRegistrosEncontrados[index];
-    if (!vehiculo) return;
+    // 5. A) IMPRIMIR HISTORIAL COMPLETO
+    function imprimirHistorialCompleto(index) {
+        const vehiculo = ultimosRegistrosEncontrados[index];
+        if (!vehiculo || !vehiculo.todosMantenimientos) return;
 
-    let ventana = window.open('', '_blank', 'width=850,height=700');
-    
-    let mantenimientosHTML = '';
-    
-    // Recorremos TODO el historial de mantenimientos registrados para este vehículo
-    if (vehiculo.mantenimientos && vehiculo.mantenimientos.length > 0) {
-        // Ordenar del más reciente al más antiguo (opcional)
-        const historialOrdenado = [...vehiculo.mantenimientos].sort((a, b) => new Date(b.fecha_actual) - new Date(a.fecha_actual));
+        let ventana = window.open('', '_blank', 'width=850,height=700');
+        let mantenimientosHTML = '';
 
-        historialOrdenado.forEach((m, i) => {
+        vehiculo.todosMantenimientos.forEach((m, i) => {
             mantenimientosHTML += `
                 <tr>
-                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; text-align: center;">#${historialOrdenado.length - i}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; font-weight: bold;">#${vehiculo.todosMantenimientos.length - i}</td>
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${m.fecha_actual || '-'}</td>
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'}</td>
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${m.trabajo_realizado || '-'}</td>
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #c53030; font-weight: bold;">${m.fecha_proximo || '-'}</td>
-                </tr>
-            `;
+                </tr>`;
         });
-    } else {
-        mantenimientosHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px; color: #718096;">No hay servicios registrados en el historial para este vehículo.</td></tr>`;
+
+        abrirVentanaImpresion(ventana, "Historial Clínico Vehicular - Completo", vehiculo, mantenimientosHTML);
     }
 
-    ventana.document.write(`
-        <!DOCTYPE html>
-        <html lang="es">
-        <head>
-            <meta charset="UTF-8">
-            <title>Historial Completo - Patente ${vehiculo.patente}</title>
-            <style>
-                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; color: #2d3748; background-color: #fff; }
-                .header { text-align: center; border-bottom: 3px solid #2b6cb0; padding-bottom: 15px; margin-bottom: 25px; }
-                .header h2 { margin: 0; color: #2b6cb0; font-size: 24px; text-transform: uppercase; }
-                .header h3 { margin: 5px 0 0 0; color: #4a5568; font-size: 16px; font-weight: normal; }
-                .info-card { background: #f7fafc; border: 1px solid #e2e8f0; border-left: 5px solid #2b6cb0; padding: 15px; border-radius: 6px; margin-bottom: 25px; display: flex; justify-content: space-between; }
-                .info-group { margin-bottom: 5px; }
-                .patente-badge { font-size: 20px; font-weight: bold; background: #2d3748; color: #fff; padding: 4px 12px; border-radius: 4px; letter-spacing: 2px; display: inline-block; }
-                table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                th { background-color: #2b6cb0; color: white; padding: 10px; text-align: left; font-size: 13px; text-transform: uppercase; }
-                .footer { margin-top: 50px; text-align: center; font-size: 11px; color: #a0aec0; border-top: 1px solid #e2e8f0; padding-top: 15px; }
-                @media print {
-                    body { padding: 0; }
-                    .no-print { display: none; }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <h2>🔧 ${nombreTallerActual}</h2>
-                <h3>Ficha de Historial Clínico Vehicular</h3>
-            </div>
+    // 5. B) IMPRIMIR ÚLTIMO SERVICIO REALIZADO
+    function imprimirUltimoServicio(index) {
+        const vehiculo = ultimosRegistrosEncontrados[index];
+        if (!vehiculo || !vehiculo.todosMantenimientos || vehiculo.todosMantenimientos.length === 0) {
+            alert("No hay mantenimientos para imprimir.");
+            return;
+        }
 
-            <div class="info-card">
-                <div>
-                    <div class="info-group"><strong>Cliente:</strong> ${vehiculo.nombre_completo}</div>
-                    <div class="info-group"><strong>Teléfono / WhatsApp:</strong> ${vehiculo.telefono}</div>
+        const ultimo = vehiculo.todosMantenimientos[0]; // El más reciente debido al ordenamiento
+        let ventana = window.open('', '_blank', 'width=850,height=700');
+
+        let mantenimientosHTML = `
+            <tr>
+                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; font-weight: bold;">1</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${ultimo.fecha_actual || '-'}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${ultimo.kilometraje ? ultimo.kilometraje.toLocaleString() + ' km' : '-'}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${ultimo.trabajo_realizado || '-'}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #c53030; font-weight: bold;">${ultimo.fecha_proximo || '-'}</td>
+            </tr>`;
+
+        abrirVentanaImpresion(ventana, "Comprobante de Último Servicio Realizado", vehiculo, mantenimientosHTML);
+    }
+
+    // Función auxiliar para maquetar la hoja de impresión
+    function abrirVentanaImpresion(ventana, tituloDocumento, vehiculo, mantenimientosHTML) {
+        ventana.document.write(`
+            <!DOCTYPE html>
+            <html lang="es">
+            <head>
+                <meta charset="UTF-8">
+                <title>${tituloDocumento} - ${vehiculo.patente}</title>
+                <style>
+                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; color: #2d3748; }
+                    .header { text-align: center; border-bottom: 3px solid #2b6cb0; padding-bottom: 15px; margin-bottom: 25px; }
+                    .header h2 { margin: 0; color: #2b6cb0; font-size: 24px; text-transform: uppercase; }
+                    .header h3 { margin: 5px 0 0 0; color: #4a5568; font-size: 16px; font-weight: normal; }
+                    .info-card { background: #f7fafc; border: 1px solid #e2e8f0; border-left: 5px solid #2b6cb0; padding: 15px; border-radius: 6px; margin-bottom: 25px; display: flex; justify-content: space-between; }
+                    .patente-badge { font-size: 20px; font-weight: bold; background: #2d3748; color: #fff; padding: 4px 12px; border-radius: 4px; letter-spacing: 2px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                    th { background-color: #2b6cb0; color: white; padding: 10px; text-align: left; font-size: 13px; text-transform: uppercase; }
+                    .footer { margin-top: 50px; text-align: center; font-size: 11px; color: #a0aec0; border-top: 1px solid #e2e8f0; padding-top: 15px; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h2>🔧 ${nombreTallerActual}</h2>
+                    <h3>${tituloDocumento}</h3>
                 </div>
-                <div style="text-align: right;">
-                    <div style="font-size: 12px; color: #718096; margin-bottom: 4px;">DOMINIO / PATENTE</div>
-                    <span class="patente-badge">${vehiculo.patente}</span>
+
+                <div class="info-card">
+                    <div>
+                        <div><strong>Cliente:</strong> ${vehiculo.nombre_completo}</div>
+                        <div><strong>Teléfono / WhatsApp:</strong> ${vehiculo.telefono}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 12px; color: #718096; margin-bottom: 4px;">PATENTE</div>
+                        <span class="patente-badge">${vehiculo.patente}</span>
+                    </div>
                 </div>
-            </div>
 
-            <h4 style="color: #2d3748; border-bottom: 2px solid #edf2f7; padding-bottom: 8px;">📋 Historial de Mantenimientos e Intervenciones (${vehiculo.mantenimientos ? vehiculo.mantenimientos.length : 0})</h4>
-            
-            <table>
-                <thead>
-                    <tr>
-                        <th style="text-align: center; width: 50px;">#</th>
-                        <th style="text-align: center; width: 110px;">Fecha</th>
-                        <th style="text-align: right; width: 110px;">Kilometraje</th>
-                        <th>Trabajo / Mantenimiento Realizado</th>
-                        <th style="text-align: center; width: 120px;">Próximo Mantenimiento</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${mantenimientosHTML}
-                </tbody>
-            </table>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="text-align: center; width: 50px;">#</th>
+                            <th style="text-align: center; width: 110px;">Fecha</th>
+                            <th style="text-align: right; width: 110px;">Kilometraje</th>
+                            <th>Trabajo Realizado</th>
+                            <th style="text-align: center; width: 130px;">Próximo Servicio</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${mantenimientosHTML}
+                    </tbody>
+                </table>
 
-            <div class="footer">
-                <p>Documento oficial generado por AppMecanico para <strong>${nombreTallerActual}</strong> | Impreso el: ${new Date().toLocaleDateString('es-AR')}</p>
-            </div>
+                <div class="footer">
+                    <p>Documento generado por AppMecanico para <strong>${nombreTallerActual}</strong> | ${new Date().toLocaleDateString('es-AR')}</p>
+                </div>
 
-            <script>
-                window.onload = function() {
-                    window.print();
-                };
-            <\/script>
-        </body>
-        </html>
-    `);
-    ventana.document.close();
-}
+                <script>
+                    window.onload = function() { window.print(); };
+                <\/script>
+            </body>
+            </html>
+        `);
+        ventana.document.close();
+    }
 
     // 6. Cargar Avisos de la Semana
     async function cargarAvisosSemana() {
