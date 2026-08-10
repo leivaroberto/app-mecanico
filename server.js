@@ -58,7 +58,7 @@ app.post('/api/guardar-mantenimiento', async (req, res) => {
         const { data: clienteData, error: errorCliente } = await supabase
             .from('clientes_vehiculos')
             .insert({
-                id_taller: datos.id_taller || 1, // Usa el id del taller logueado
+                id_taller: datos.id_taller || 1,
                 nombre_completo: datos.nombre,
                 telefono: datos.telefono,
                 patente: datos.patente.toUpperCase().trim()
@@ -75,7 +75,6 @@ app.post('/api/guardar-mantenimiento', async (req, res) => {
         }
 
         const id_cliente = clienteData[0].id_cliente;
-        console.log("Cliente registrado con ID:", id_cliente);
 
         // 2. Insertar mantenimiento vinculado
         const { error: errorMantenimiento } = await supabase
@@ -113,7 +112,6 @@ app.get('/api/registros/buscar', async (req, res) => {
     }
 
     try {
-        // Consultamos la tabla clientes_vehiculos e incluimos los mantenimientos asociados
         const { data, error } = await supabase
             .from('clientes_vehiculos')
             .select(`
@@ -142,39 +140,71 @@ app.get('/api/registros/buscar', async (req, res) => {
     }
 });
 
-// Arrancar el servidor escuchando en el puerto asignado
+// ==========================================
+// 4. ENDPOINT PARA AVISOS DE LA SEMANA
+// ==========================================
+app.get('/avisos-semana', async (req, res) => {
+    const { id_taller } = req.query;
+
+    try {
+        const hoy = new Date();
+        const hoyStr = hoy.toISOString().split('T')[0];
+        
+        const proximoEn7Dias = new Date();
+        proximoEn7Dias.setDate(hoy.getDate() + 7);
+        proximoEn7DiasStr = proximoEn7Dias.toISOString().split('T')[0];
+
+        // Consulta usando la relación correcta de clientes_vehiculos y mantenimientos
+        let query = supabase
+            .from('mantenimientos')
+            .select(`
+                id_servicio,
+                fecha_proximo,
+                trabajo_realizado,
+                clientes_vehiculos!inner (
+                    id_taller,
+                    nombre_completo,
+                    telefono,
+                    patente
+                )
+            `)
+            .gte('fecha_proximo', hoyStr)
+            .lte('fecha_proximo', proximoEn7DiasStr)
+            .order('fecha_proximo', { ascending: true });
+
+        if (id_taller) {
+            query = query.eq('clientes_vehiculos.id_taller', id_taller);
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+
+        // Mapear los datos para devolver una estructura limpia al frontend
+        const avisosNormalizados = (data || []).map(item => ({
+            id: item.id_servicio,
+            fecha_proximo: item.fecha_proximo,
+            mantenimiento_realizado: item.trabajo_realizado,
+            clientes: {
+                nombre: item.clientes_vehiculos?.nombre_completo,
+                telefono: item.clientes_vehiculos?.telefono
+            },
+            vehiculos: {
+                patente: item.clientes_vehiculos?.patente
+            }
+        }));
+
+        res.json(avisosNormalizados);
+
+    } catch (err) {
+        console.error('Error al obtener avisos de la semana:', err);
+        res.status(500).json({ error: 'Error al consultar avisos de la semana: ' + err.message });
+    }
+});
+
+// ==========================================
+// ARRANQUE DEL SERVIDOR (SIEMPRE AL FINAL)
+// ==========================================
 app.listen(port, () => {
     console.log(`Servidor de AppMecanico corriendo en el puerto ${port}`);
-});
-// Endpoint para obtener los avisos/recordatorios de la semana (próximos 7 días)
-app.get('/avisos-semana', async (req, res) => {
-  try {
-    const hoy = new Date();
-    const hoyStr = hoy.toISOString().split('T')[0];
-    
-    const proximoEn7Dias = new Date();
-    proximoEn7Dias.setDate(hoy.getDate() + 7);
-    const proximoEn7DiasStr = proximoEn7Dias.toISOString().split('T')[0];
-
-    // Consultar en Supabase mantenimientos con fecha_proximo entre hoy y dentro de 7 días
-    const { data, error } = await supabase
-      .from('mantenimientos')
-      .select(`
-        id,
-        fecha_proximo,
-        mantenimiento_realizado,
-        clientes ( nombre, telefono ),
-        vehiculos ( patente )
-      `)
-      .gte('fecha_proximo', hoyStr)
-      .lte('fecha_proximo', proximoEn7DiasStr)
-      .order('fecha_proximo', { ascending: true });
-
-    if (error) throw error;
-
-    res.json(data);
-  } catch (err) {
-    console.error('Error al obtener avisos de la semana:', err);
-    res.status(500).json({ error: 'Error al consultar avisos de la semana' });
-  }
 });
