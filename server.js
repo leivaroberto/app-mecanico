@@ -146,3 +146,35 @@ app.get('/api/registros/buscar', async (req, res) => {
 app.listen(port, () => {
     console.log(`Servidor de AppMecanico corriendo en el puerto ${port}`);
 });
+// Endpoint para obtener los avisos/recordatorios de la semana (próximos 7 días)
+app.get('/avisos-semana', async (req, res) => {
+  try {
+    const hoy = new Date();
+    const hoyStr = hoy.toISOString().split('T')[0];
+    
+    const proximoEn7Dias = new Date();
+    proximoEn7Dias.setDate(hoy.getDate() + 7);
+    const proximoEn7DiasStr = proximoEn7Dias.toISOString().split('T')[0];
+
+    // Consultar en Supabase mantenimientos con fecha_proximo entre hoy y dentro de 7 días
+    const { data, error } = await supabase
+      .from('mantenimientos')
+      .select(`
+        id,
+        fecha_proximo,
+        mantenimiento_realizado,
+        clientes ( nombre, telefono ),
+        vehiculos ( patente )
+      `)
+      .gte('fecha_proximo', hoyStr)
+      .lte('fecha_proximo', proximoEn7DiasStr)
+      .order('fecha_proximo', { ascending: true });
+
+    if (error) throw error;
+
+    res.json(data);
+  } catch (err) {
+    console.error('Error al obtener avisos de la semana:', err);
+    res.status(500).json({ error: 'Error al consultar avisos de la semana' });
+  }
+});
