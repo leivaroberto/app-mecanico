@@ -149,9 +149,13 @@
                                 <input type="date" class="form-control" id="fecha_proximo" required>
                             </div>
                         </div>
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label class="form-label">Trabajo Realizado</label>
-                            <textarea class="form-control" id="trabajo" rows="3" placeholder="Ej: Cambio de aceite y filtros" required></textarea>
+                            <textarea class="form-control" id="trabajo" rows="2" placeholder="Ej: Cambio de aceite, filtro y bujías" required></textarea>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label text-primary font-weight-bold">Trabajo a realizar en la próxima visita (Sugerido)</label>
+                            <textarea class="form-control border-primary" id="trabajo_proximo" rows="2" placeholder="Ej: Revisión y cambio de pastillas de freno delanteras"></textarea>
                         </div>
                         <div class="d-grid">
                             <button type="submit" class="btn btn-success btn-lg">Guardar Mantenimiento</button>
@@ -242,7 +246,7 @@
                 const nombre = i.clientes?.nombre || 'Sin nombre';
                 const tel = i.clientes?.telefono || '';
                 const pat = i.vehiculos?.patente || 'N/A';
-                const mje = encodeURIComponent(`Hola ${nombre}, te recordamos desde el Taller que tu vehículo (${pat}) tiene programado su próximo mantenimiento para la fecha ${i.fecha_proximo}.`);
+                const mje = encodeURIComponent(`Hola ${nombre}, te recordamos desde el Taller que tu vehículo (${pat}) tiene programado su próximo mantenimiento (${i.mantenimiento_realizado}) para la fecha ${i.fecha_proximo}.`);
                 return `<tr>
                     <td><span class="badge bg-danger">${i.fecha_proximo}</span></td>
                     <td><strong>${nombre}</strong></td>
@@ -286,7 +290,6 @@
 
                 let clienteInfo = data.registros[data.registros.length - 1]; // Dueño más reciente
                 
-                // Guardamos los datos estructurados en la variable global
                 vehiculoActualBuscado = {
                     patente: clienteInfo.patente,
                     nombre_completo: clienteInfo.nombre_completo,
@@ -318,8 +321,9 @@
                                     <div>
                                         👤 <strong>Cliente en este servicio:</strong> ${m.nombre_cliente} (${m.telefono_cliente})<br>
                                         📅 <strong>Fecha:</strong> ${m.fecha_actual || '-'} | 🚗 <strong>Km:</strong> ${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'} | 💰 <strong>Costo:</strong> $${m.costo ? Number(m.costo).toLocaleString() : '0'}<br>
-                                        🔧 <strong>Trabajo:</strong> ${m.trabajo_realizado || '-'} <br>
-                                        🔔 <strong class='text-danger'>Próximo Mantenimiento:</strong> ${m.fecha_proximo || '-'}
+                                        🔧 <strong>Trabajo Realizado:</strong> ${m.trabajo_realizado || '-'}<br>
+                                        🎯 <strong class='text-primary'>Próxima Visita (A Realizar):</strong> ${m.trabajo_proximo || 'No especificado'}<br>
+                                        🔔 <strong class='text-danger'>Fecha Próxima:</strong> ${m.fecha_proximo || '-'}
                                     </div>
                                     <button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro(${m.id_servicio})">🗑️ Eliminar</button>
                                 </div>
@@ -366,6 +370,7 @@
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${m.nombre_cliente || '-'}</td>
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'}</td>
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${m.trabajo_realizado || '-'}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; color: #2b6cb0;">${m.trabajo_proximo || '-'}</td>
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #c53030; font-weight: bold;">${m.fecha_proximo || '-'}</td>
                 </tr>`;
         });
@@ -378,7 +383,7 @@
             return alert("No hay mantenimientos para imprimir.");
         }
 
-        const ultimo = vehiculoActualBuscado.todosMantenimientos[0]; // El más reciente
+        const ultimo = vehiculoActualBuscado.todosMantenimientos[0];
         let ventana = window.open('', '_blank', 'width=850,height=700');
 
         let mantenimientosHTML = `
@@ -388,6 +393,7 @@
                 <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${ultimo.nombre_cliente || '-'}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${ultimo.kilometraje ? ultimo.kilometraje.toLocaleString() + ' km' : '-'}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${ultimo.trabajo_realizado || '-'}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; color: #2b6cb0;">${ultimo.trabajo_proximo || '-'}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #c53030; font-weight: bold;">${ultimo.fecha_proximo || '-'}</td>
             </tr>`;
 
@@ -409,7 +415,7 @@
                     .info-card { background: #f7fafc; border: 1px solid #e2e8f0; border-left: 5px solid #2b6cb0; padding: 15px; border-radius: 6px; margin-bottom: 25px; display: flex; justify-content: space-between; }
                     .patente-badge { font-size: 20px; font-weight: bold; background: #2d3748; color: #fff; padding: 4px 12px; border-radius: 4px; letter-spacing: 2px; }
                     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                    th { background-color: #2b6cb0; color: white; padding: 10px; text-align: left; font-size: 13px; text-transform: uppercase; }
+                    th { background-color: #2b6cb0; color: white; padding: 10px; text-align: left; font-size: 12px; text-transform: uppercase; }
                     .footer { margin-top: 50px; text-align: center; font-size: 11px; color: #a0aec0; border-top: 1px solid #e2e8f0; padding-top: 15px; }
                 </style>
             </head>
@@ -433,12 +439,13 @@
                 <table>
                     <thead>
                         <tr>
-                            <th style="text-align: center; width: 40px;">#</th>
-                            <th style="text-align: center; width: 100px;">Fecha</th>
-                            <th style="width: 140px;">Cliente (Dueño en el servicio)</th>
-                            <th style="text-align: right; width: 110px;">Kilometraje</th>
+                            <th style="text-align: center; width: 35px;">#</th>
+                            <th style="text-align: center; width: 90px;">Fecha</th>
+                            <th style="width: 120px;">Cliente</th>
+                            <th style="text-align: right; width: 95px;">Kilometraje</th>
                             <th>Trabajo Realizado</th>
-                            <th style="text-align: center; width: 120px;">Próximo Servicio</th>
+                            <th>Trabajo Próximo</th>
+                            <th style="text-align: center; width: 105px;">Fecha Próxima</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -471,7 +478,8 @@
             costo: document.getElementById('costo').value,
             fecha_servicio: document.getElementById('fecha_servicio').value,
             fecha_proximo: document.getElementById('fecha_proximo').value,
-            trabajo: document.getElementById('trabajo').value
+            trabajo: document.getElementById('trabajo').value,
+            trabajo_proximo: document.getElementById('trabajo_proximo').value
         };
 
         try {
@@ -482,7 +490,8 @@
             if (data.exito) {
                 alert('¡Mantenimiento guardado con éxito!');
                 if (confirm('¿Deseas abrir WhatsApp para enviarle el recordatorio al cliente?')) {
-                    let mensaje = `¡Hola ${datos.nombre}! Te escribimos del taller para recordarte que tu vehículo (${datos.patente}) se acerca a su mantenimiento el ${datos.fecha_proximo}.`;
+                    let detalleProximo = datos.trabajo_proximo ? ` (${datos.trabajo_proximo})` : '';
+                    let mensaje = `¡Hola ${datos.nombre}! Te escribimos del taller para recordarte que tu vehículo (${datos.patente}) se acerca a su próximo servicio${detalleProximo} el ${datos.fecha_proximo}.`;
                     window.open(`https://api.whatsapp.com/send?phone=${encodeURIComponent(datos.telefono)}&text=${encodeURIComponent(mensaje)}`, '_blank');
                 }
                 document.getElementById('mantenimientoForm').reset();
@@ -497,5 +506,7 @@
 
     document.getElementById('btnCerrarSesion').addEventListener('click', () => location.reload());
 </script>
+</body>
+</html>
 </body>
 </html>
