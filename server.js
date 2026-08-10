@@ -75,7 +75,7 @@ app.post('/api/login', async (req, res) => {
     try {
         // Consultar la tabla usuarios_taller en Supabase
         const { data: usuario, error } = await supabase
-            .from('usuarios_taller')
+            .from('usuarios_talleres')
             .select('*')
             .eq('email', email)
             .eq('password', password) // En producción se recomienda cifrar la clave
