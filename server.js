@@ -100,3 +100,28 @@ app.post('/api/login', async (req, res) => {
         res.status(500).json({ exito: false, mensaje: 'Error interno del servidor' });
     }
 });
+// Endpoint para buscar registros por patente
+app.get('/api/registros/buscar', async (req, res) => {
+    const { patente, id_taller } = req.query;
+
+    if (!patente || !id_taller) {
+        return res.status(400).json({ exito: false, mensaje: 'Faltan parámetros de búsqueda.' });
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from('registros_mantenimiento') // Revisa el nombre exacto de tu tabla de registros
+            .select('*')
+            .eq('id_taller', id_taller)
+            .ilike('patente', `%${patente.trim()}%`) // Búsqueda flexible por patente
+            .order('fecha', { ascending: false });
+
+        if (error) throw error;
+
+        res.json({ exito: true, registros: data });
+
+    } catch (err) {
+        console.error("Error al buscar por patente:", err);
+        res.status(500).json({ exito: false, mensaje: 'Error al realizar la búsqueda.' });
+    }
+});
