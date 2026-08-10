@@ -68,3 +68,35 @@ app.post('/api/guardar-mantenimiento', async (req, res) => {
 app.listen(port, () => {
     console.log(`Servidor corriendo en el puerto ${port}`);
 });
+// Endpoint para iniciar sesión
+app.post('/api/login', async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        // Consultar la tabla usuarios_taller en Supabase
+        const { data: usuario, error } = await supabase
+            .from('usuarios_taller')
+            .select('*')
+            .eq('email', email)
+            .eq('password', password) // En producción se recomienda cifrar la clave
+            .single();
+
+        if (error || !usuario) {
+            return res.status(401).json({ 
+                exito: false, 
+                mensaje: 'Correo o contraseña incorrectos' 
+            });
+        }
+
+        // Login exitoso: devolver id_taller y nombre_taller
+        res.json({
+            exito: true,
+            id_taller: usuario.id_taller || usuario.id,
+            nombre_taller: usuario.nombre_taller
+        });
+
+    } catch (err) {
+        console.error('Error en login:', err);
+        res.status(500).json({ exito: false, mensaje: 'Error interno del servidor' });
+    }
+});
