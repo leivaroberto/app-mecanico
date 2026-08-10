@@ -62,6 +62,21 @@
         <div class="tab-content">
             
             <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card bg-primary text-white p-3 text-center">
+                            <h5>Vehículos Atendidos este Mes</h5>
+                            <h2 id="statVehiculos">--</h2>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-success text-white p-3 text-center mt-3 mt-md-0">
+                            <h5>Ingresos Generados este Mes</h5>
+                            <h2 id="statIngresos">$ --</h2>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card shadow-sm mb-4">
                     <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">🔔 Recordatorios / Avisos de la Semana</h5>
@@ -111,13 +126,17 @@
                             </div>
                         </div>
                         <div class="row mb-3">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label">Patente / Dominio</label>
                                 <input type="text" class="form-control text-uppercase" id="patente" placeholder="AB123CD" required>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label">Kilometraje Actual</label>
                                 <input type="number" class="form-control" id="kilometraje" placeholder="Ej: 85000" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Costo Total ($)</label>
+                                <input type="number" class="form-control bg-light text-success fw-bold" id="costo" placeholder="Ej: 45000" required>
                             </div>
                         </div>
                         <div class="row mb-3">
@@ -190,12 +209,25 @@
                 document.getElementById('seccionApp').classList.remove('oculto');
 
                 cargarAvisosSemana();
+                cargarEstadisticas();
             } else alert(data.mensaje || 'Credenciales incorrectas');
         } catch (error) {
             alert('Error de conexión con el servidor.');
         } finally {
             btn.disabled = false; btn.innerText = "Ingresar con Clave";
         }
+    }
+
+    // --- DASHBOARD Y ESTADÍSTICAS ---
+    async function cargarEstadisticas() {
+        try {
+            const res = await fetch(`${API_URL}/api/estadisticas?id_taller=${tallerActualId}`);
+            const data = await res.json();
+            if(data.exito){
+                document.getElementById('statVehiculos').innerText = data.totalVehiculos;
+                document.getElementById('statIngresos').innerText = `$ ${data.ingresosMes.toLocaleString()}`;
+            }
+        } catch(e) { console.error("Error al cargar estadísticas:", e); }
     }
 
     async function cargarAvisosSemana() {
@@ -268,7 +300,7 @@
                             <li class='list-group-item px-0'>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
-                                        📅 <strong>Fecha:</strong> ${m.fecha_actual || '-'} | 🚗 <strong>Km:</strong> ${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'}<br>
+                                        📅 <strong>Fecha:</strong> ${m.fecha_actual || '-'} | 🚗 <strong>Km:</strong> ${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'} | 💰 <strong>Costo:</strong> $${m.costo ? Number(m.costo).toLocaleString() : '0'}<br>
                                         🔧 <strong>Trabajo:</strong> ${m.trabajo_realizado || '-'} <br>
                                         🔔 <strong class='text-danger'>Próximo Mantenimiento:</strong> ${m.fecha_proximo || '-'}
                                     </div>
@@ -295,11 +327,12 @@
             if(data.exito) {
                 alert('Registro eliminado.');
                 buscarPorPatente();
+                cargarEstadisticas();
             } else alert('Error al eliminar registro');
         } catch(e) { alert('Error de conexión.'); }
     }
 
-    // --- FORMATO DE IMPRESIÓN (SIN COSTOS) ---
+    // --- FORMATO DE IMPRESIÓN SIN COSTOS ---
     function imprimirHistorialCompleto(index) {
         const vehiculo = ultimosRegistrosEncontrados[index];
         if (!vehiculo || !vehiculo.todosMantenimientos || vehiculo.todosMantenimientos.length === 0) return alert("No hay mantenimientos para imprimir.");
@@ -381,7 +414,7 @@
                         <tr>
                             <th style="text-align: center; width: 40px;">#</th>
                             <th style="text-align: center; width: 110px;">Fecha</th>
-                            <th style="text-align: right; width: 110px;">Kilometraje</th>
+                            <th style="text-align: right; width: 120px;">Kilometraje</th>
                             <th>Trabajo Realizado</th>
                             <th style="text-align: center; width: 130px;">Próximo Servicio</th>
                         </tr>
@@ -413,6 +446,7 @@
             telefono: document.getElementById('telefono').value,
             patente: document.getElementById('patente').value,
             kilometraje: document.getElementById('kilometraje').value,
+            costo: document.getElementById('costo').value,
             fecha_servicio: document.getElementById('fecha_servicio').value,
             fecha_proximo: document.getElementById('fecha_proximo').value,
             trabajo: document.getElementById('trabajo').value
@@ -431,6 +465,7 @@
                 }
                 document.getElementById('mantenimientoForm').reset();
                 cargarAvisosSemana();
+                cargarEstadisticas();
                 
                 // Volver a la solapa principal
                 const triggerEl = document.querySelector('#dashboard-tab');
