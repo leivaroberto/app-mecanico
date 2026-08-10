@@ -3,86 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AppMecanico - Gestión de Talleres</title>
+    <title>AppMecanico - Acceso de Talleres</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background-color: #f4f7f6; }
         .card { border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         .header-title { color: #2c3e50; font-weight: bold; }
+        .oculto { display: none !important; }
     </style>
 </head>
 <body>
 
 <div class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="header-title">🔧 Taller "EL CHAMO"</h2>
-        <button class="btn btn-outline-danger btn-sm">Cerrar Sesión</button>
-    </div>
 
-    <div class="row justify-content-center">
-        <div class="col-md-8">
+    <div id="seccionLogin" class="row justify-content-center mt-5">
+        <div class="col-md-5">
             <div class="card p-4">
-                <h4 class="mb-4 text-center">Registrar Nuevo Mantenimiento</h4>
+                <div class="text-center mb-4">
+                    <h2 class="header-title">🔧 AppMecanico</h2>
+                    <p class="text-muted">Inicia sesión en tu taller</p>
+                </div>
                 
-                <form id="mantenimientoForm">
-                    <h5 class="text-secondary border-bottom pb-2">Datos del Cliente</h5>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Nombre del Cliente</label>
-                            <input type="text" class="form-control" id="nombre" placeholder="Ej. Juan Pérez" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Teléfono (WhatsApp)</label>
-                            <input type="tel" class="form-control" id="telefono" placeholder="+54 9 11 1234-5678" required>
-                        </div>
-                    </div>
-
-                    <h5 class="text-secondary border-bottom pb-2 mt-4">Datos del Vehículo</h5>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Patente / Dominio</label>
-                            <input type="text" class="form-control text-uppercase" id="patente" placeholder="AB 123 CD" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Kilometraje Actual</label>
-                            <input type="number" class="form-control" id="kilometraje" placeholder="Ej. 50000" required>
-                        </div>
-                    </div>
-
-                    <h5 class="text-secondary border-bottom pb-2 mt-4">Mantenimiento</h5>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Fecha del Servicio</label>
-                            <input type="date" class="form-control" id="fecha_servicio" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Fecha Próximo Mantenimiento</label>
-                            <input type="date" class="form-control" id="fecha_proximo" required>
-                            <div class="form-text text-success">Se enviará un aviso por SMS 1 semana antes.</div>
-                        </div>
+                <form id="loginForm">
+                    <div class="mb-3">
+                        <label class="form-label">Correo Electrónico</label>
+                        <input type="email" class="form-control" id="loginEmail" placeholder="admin@taller.com" required>
                     </div>
                     <div class="mb-4">
-                        <label class="form-label">Trabajo Realizado</label>
-                        <textarea class="form-control" id="trabajo" rows="3" placeholder="Ej. Cambio de aceite 10w40..." required></textarea>
+                        <label class="form-label">Contraseña</label>
+                        <input type="password" class="form-control" id="loginPassword" placeholder="******" required>
                     </div>
-
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg">Guardar y Programar Aviso</button>
+                        <button type="submit" id="btnIngresar" class="btn btn-dark btn-lg">Ingresar al Sistema</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
+
+    <div id="seccionApp" class="oculto">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 id="tituloTaller" class="header-title">🔧 Taller Mecánico</h2>
+            <button id="btnCerrarSesion" class="btn btn-outline-danger btn-sm">Cerrar Sesión</button>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card p-4">
+                    <h4 class="mb-4 text-center">Registrar Nuevo Mantenimiento</h4>
+                    
+                    <form id="mantenimientoForm">
+                        <h5 class="text-secondary border-bottom pb-2">Datos del Cliente</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Nombre del Cliente</label>
+                                <input type="text" class="form-control" id="nombre" placeholder="Ej. Juan Pérez" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Teléfono (WhatsApp)</label>
+                                <input type="tel" class="form-control" id="telefono" placeholder="+54 9 11 1234-5678" required>
+                            </div>
+                        </div>
+
+                        <h5 class="text-secondary border-bottom pb-2 mt-4">Datos del Vehículo</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Patente / Dominio</label>
+                                <input type="text" class="form-control text-uppercase" id="patente" placeholder="AB 123 CD" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Kilometraje Actual</label>
+                                <input type="number" class="form-control" id="kilometraje" placeholder="Ej. 50000" required>
+                            </div>
+                        </div>
+
+                        <h5 class="text-secondary border-bottom pb-2 mt-4">Mantenimiento</h5>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha del Servicio</label>
+                                <input type="date" class="form-control" id="fecha_servicio" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha Próximo Mantenimiento</label>
+                                <input type="date" class="form-control" id="fecha_proximo" required>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label">Trabajo Realizado</label>
+                            <textarea class="form-control" id="trabajo" rows="3" placeholder="Ej. Cambio de aceite 10w40..." required></textarea>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">Guardar y Programar Aviso</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    document.getElementById('mantenimientoForm').addEventListener('submit', async function(e) {
-        e.preventDefault(); // Evita que la página recargue al hacer clic
+    let tallerActualId = null;
 
-        // 1. Recolectar todos los datos que escribió el mecánico
+    // 1. Lógica de Inicio de Sesión consultando a Supabase vía backend
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        const btnIngresar = document.getElementById('btnIngresar');
+
+        btnIngresar.disabled = true;
+        btnIngresar.innerText = "Verificando...";
+
+        try {
+            const respuesta = await fetch('https://app-mecanico.onrender.com/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const resultado = await respuesta.json();
+
+            if (resultado.exito) {
+                tallerActualId = resultado.id_taller;
+                
+                // Actualizar el título dinámicamente con el nombre del taller
+                document.getElementById('tituloTaller').innerText = "🔧 " + (resultado.nombre_taller || "Taller Mecánico");
+
+                // Mostrar la app y ocultar el login
+                document.getElementById('seccionLogin').classList.add('oculto');
+                document.getElementById('seccionApp').classList.remove('oculto');
+            } else {
+                alert(resultado.mensaje || 'Credenciales incorrectas');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('No se pudo conectar con el servidor.');
+        } finally {
+            btnIngresar.disabled = false;
+            btnIngresar.innerText = "Ingresar al Sistema";
+        }
+    });
+
+    // 2. Lógica para Cerrar Sesión
+    document.getElementById('btnCerrarSesion').addEventListener('click', function() {
+        tallerActualId = null;
+        document.getElementById('seccionApp').classList.add('oculto');
+        document.getElementById('seccionLogin').classList.remove('oculto');
+        document.getElementById('loginForm').reset();
+    });
+
+    // 3. Lógica para Guardar el Mantenimiento asociado al taller
+    document.getElementById('mantenimientoForm').addEventListener('submit', async function(e) {
+        e.preventDefault(); 
+
         const datos = {
+            id_taller: tallerActualId,
             nombre: document.getElementById('nombre').value,
             telefono: document.getElementById('telefono').value,
             patente: document.getElementById('patente').value,
@@ -93,27 +174,35 @@
         };
 
         try {
-            // 2. Enviar los datos a tu servidor en Render
             const respuesta = await fetch('https://app-mecanico.onrender.com/api/guardar-mantenimiento', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(datos)
-});
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datos)
+            });
 
             const resultado = await respuesta.json();
             
-            // 3. Mostrar un aviso si todo salió bien
             if(resultado.exito) {
-                alert('¡Excelente! ' + resultado.mensaje);
-                document.getElementById('mantenimientoForm').reset(); // Limpiar el formulario
+                let fechaProx = new Date(datos.fecha_proximo);
+                fechaProx.setDate(fechaProx.getDate() - 7);
+                let fechaAvisoStr = fechaProx.toISOString().split('T')[0];
+
+                alert('¡Guardado con éxito!\n\n💡 Aviso de WhatsApp programado para el: ' + fechaAvisoStr);
+                
+                let enviar = confirm('¿Deseas enviar el mensaje recordatorio de WhatsApp al cliente ahora?');
+                if(enviar) {
+                    let mensaje = `¡Hola ${datos.nombre}! Te escribimos del taller para recordarte que tu vehículo (${datos.patente}) se acerca a su mantenimiento el ${datos.fecha_proximo}. Te esperamos para coordinar tu turno.`;
+                    let urlWhatsApp = `https://api.whatsapp.com/send?phone=${encodeURIComponent(datos.telefono)}&text=${encodeURIComponent(mensaje)}`;
+                    window.open(urlWhatsApp, '_blank');
+                }
+
+                document.getElementById('mantenimientoForm').reset();
             } else {
-                alert('Hubo un error al guardar los datos.');
+                alert('Hubo un error al guardar: ' + resultado.mensaje);
             }
         } catch (error) {
             console.error('Error:', error);
-            alert('No se pudo conectar con el servidor en la nube.');
+            alert('No se pudo conectar con el servidor.');
         }
     });
 </script>
