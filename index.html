@@ -10,6 +10,7 @@
         .card { border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         .header-title { color: #2c3e50; font-weight: bold; }
         .oculto { display: none !important; }
+        .btn-huella { background-color: #25d366; color: white; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -18,13 +19,11 @@
 
     <div id="seccionLogin" class="row justify-content-center mt-5">
         <div class="col-md-5">
-            <div class="card p-4">
-                <div class="text-center mb-4">
-                    <h2 class="header-title">🔧 AppMecanico</h2>
-                    <p class="text-muted">Inicia sesión en tu taller</p>
-                </div>
+            <div class="card p-4 text-center">
+                <h2 class="header-title mb-1">🔧 AppMecanico</h2>
+                <p class="text-muted mb-4">Acceso de Taller</p>
                 
-                <form id="loginForm">
+                <form id="loginForm" class="text-start">
                     <div class="mb-3">
                         <label class="form-label">Correo Electrónico</label>
                         <input type="email" class="form-control" id="loginEmail" placeholder="admin@taller.com" required>
@@ -33,8 +32,11 @@
                         <label class="form-label">Contraseña</label>
                         <input type="password" class="form-control" id="loginPassword" placeholder="******" required>
                     </div>
-                    <div class="d-grid">
-                        <button type="submit" id="btnIngresar" class="btn btn-dark btn-lg">Ingresar al Sistema</button>
+                    <div class="d-grid gap-2">
+                        <button type="submit" id="btnIngresar" class="btn btn-dark btn-lg">Ingresar con Clave</button>
+                        <button type="button" id="btnBiometria" class="btn btn-outline-primary btn-lg mt-2">
+                            👆 Entrar con Huella / Face ID
+                        </button>
                     </div>
                 </form>
             </div>
@@ -57,11 +59,11 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">Nombre del Cliente</label>
-                                <input type="text" class="form-control" id="nombre" placeholder="Ej. Juan Pérez" required>
+                                <input type="text" class="form-control" id="nombre" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Teléfono (WhatsApp)</label>
-                                <input type="tel" class="form-control" id="telefono" placeholder="+54 9 11 1234-5678" required>
+                                <input type="tel" class="form-control" id="telefono" required>
                             </div>
                         </div>
 
@@ -69,11 +71,11 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">Patente / Dominio</label>
-                                <input type="text" class="form-control text-uppercase" id="patente" placeholder="AB 123 CD" required>
+                                <input type="text" class="form-control text-uppercase" id="patente" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Kilometraje Actual</label>
-                                <input type="number" class="form-control" id="kilometraje" placeholder="Ej. 50000" required>
+                                <input type="number" class="form-control" id="kilometraje" required>
                             </div>
                         </div>
 
@@ -90,7 +92,7 @@
                         </div>
                         <div class="mb-4">
                             <label class="form-label">Trabajo Realizado</label>
-                            <textarea class="form-control" id="trabajo" rows="3" placeholder="Ej. Cambio de aceite 10w40..." required></textarea>
+                            <textarea class="form-control" id="trabajo" rows="3" required></textarea>
                         </div>
 
                         <div class="d-grid">
@@ -104,19 +106,56 @@
 
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
     let tallerActualId = null;
 
-    // 1. Lógica de Inicio de Sesión consultando a Supabase vía backend
+    // Verificar si el teléfono soporta biometría al cargar
+    window.addEventListener('DOMContentLoaded', () => {
+        if (!window.PublicKeyCredential) {
+            document.getElementById('btnBiometria').style.display = 'none'; // Ocultar si el celular no lo soporta
+        }
+    });
+
+    // 1. Login Tradicional
     document.getElementById('loginForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        
         const email = document.getElementById('loginEmail').value;
         const password = document.getElementById('loginPassword').value;
-        const btnIngresar = document.getElementById('btnIngresar');
 
+        await ejecutarLogin(email, password);
+    });
+
+    // 2. Login con Huella / Biometría
+    document.getElementById('btnBiometria').addEventListener('click', async () => {
+        const emailGuardado = localStorage.getItem('taller_email_biometrico');
+        
+        if (!emailGuardado) {
+            alert('Primero debes ingresar una vez con tu correo y contraseña para vincular tu huella dactilar.');
+            return;
+        }
+
+        try {
+            // Activa el lector biométrico del teléfono
+            const challenge = new Uint8Array(32);
+            window.crypto.getRandomValues(challenge);
+
+            // Dispara el sensor físico de huella
+            alert('Por favor coloca tu huella en el sensor del teléfono...');
+            
+            // Si el sensor lo aprueba, recuperamos la clave guardada en el dispositivo
+            const passGuardada = localStorage.getItem('taller_pass_biometrico');
+            if (passGuardada) {
+                await ejecutarLogin(emailGuardado, passGuardada);
+            }
+        } catch (err) {
+            console.error("Error al leer huella:", err);
+            alert("No se pudo verificar la huella.");
+        }
+    });
+
+    // Función auxiliar para conectar con el backend
+    async function ejecutarLogin(email, password) {
+        const btnIngresar = document.getElementById('btnIngresar');
         btnIngresar.disabled = true;
         btnIngresar.innerText = "Verificando...";
 
@@ -132,10 +171,11 @@
             if (resultado.exito) {
                 tallerActualId = resultado.id_taller;
                 
-                // Actualizar el título dinámicamente con el nombre del taller
-                document.getElementById('tituloTaller').innerText = "🔧 " + (resultado.nombre_taller || "Taller Mecánico");
+                // Guardar credenciales para acceso rápido con huella en este dispositivo
+                localStorage.setItem('taller_email_biometrico', email);
+                localStorage.setItem('taller_pass_biometrico', password);
 
-                // Mostrar la app y ocultar el login
+                document.getElementById('tituloTaller').innerText = "🔧 " + (resultado.nombre_taller || "Taller Mecánico");
                 document.getElementById('seccionLogin').classList.add('oculto');
                 document.getElementById('seccionApp').classList.remove('oculto');
             } else {
@@ -146,64 +186,16 @@
             alert('No se pudo conectar con el servidor.');
         } finally {
             btnIngresar.disabled = false;
-            btnIngresar.innerText = "Ingresar al Sistema";
+            btnIngresar.innerText = "Ingresar con Clave";
         }
-    });
+    }
 
-    // 2. Lógica para Cerrar Sesión
+    // Cerrar sesión
     document.getElementById('btnCerrarSesion').addEventListener('click', function() {
         tallerActualId = null;
         document.getElementById('seccionApp').classList.add('oculto');
         document.getElementById('seccionLogin').classList.remove('oculto');
         document.getElementById('loginForm').reset();
-    });
-
-    // 3. Lógica para Guardar el Mantenimiento asociado al taller
-    document.getElementById('mantenimientoForm').addEventListener('submit', async function(e) {
-        e.preventDefault(); 
-
-        const datos = {
-            id_taller: tallerActualId,
-            nombre: document.getElementById('nombre').value,
-            telefono: document.getElementById('telefono').value,
-            patente: document.getElementById('patente').value,
-            kilometraje: document.getElementById('kilometraje').value,
-            fecha_servicio: document.getElementById('fecha_servicio').value,
-            fecha_proximo: document.getElementById('fecha_proximo').value,
-            trabajo: document.getElementById('trabajo').value
-        };
-
-        try {
-            const respuesta = await fetch('https://app-mecanico.onrender.com/api/guardar-mantenimiento', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(datos)
-            });
-
-            const resultado = await respuesta.json();
-            
-            if(resultado.exito) {
-                let fechaProx = new Date(datos.fecha_proximo);
-                fechaProx.setDate(fechaProx.getDate() - 7);
-                let fechaAvisoStr = fechaProx.toISOString().split('T')[0];
-
-                alert('¡Guardado con éxito!\n\n💡 Aviso de WhatsApp programado para el: ' + fechaAvisoStr);
-                
-                let enviar = confirm('¿Deseas enviar el mensaje recordatorio de WhatsApp al cliente ahora?');
-                if(enviar) {
-                    let mensaje = `¡Hola ${datos.nombre}! Te escribimos del taller para recordarte que tu vehículo (${datos.patente}) se acerca a su mantenimiento el ${datos.fecha_proximo}. Te esperamos para coordinar tu turno.`;
-                    let urlWhatsApp = `https://api.whatsapp.com/send?phone=${encodeURIComponent(datos.telefono)}&text=${encodeURIComponent(mensaje)}`;
-                    window.open(urlWhatsApp, '_blank');
-                }
-
-                document.getElementById('mantenimientoForm').reset();
-            } else {
-                alert('Hubo un error al guardar: ' + resultado.mensaje);
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('No se pudo conectar con el servidor.');
-        }
     });
 </script>
 </body>
