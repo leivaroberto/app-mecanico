@@ -170,7 +170,7 @@
     const API_URL = 'https://app-mecanico.onrender.com';
     let tallerActualId = null;
     let nombreTallerActual = "Taller Mecánico";
-    let ultimosRegistrosEncontrados = [];
+    let vehiculoActualBuscado = null;
 
     // --- LOGICA DE LOGIN Y BIOMETRIA ---
     window.addEventListener('DOMContentLoaded', () => {
@@ -258,7 +258,7 @@
     function limpiarBusqueda() {
         document.getElementById('buscarPatente').value = '';
         document.getElementById('resultadoBusqueda').innerHTML = '';
-        ultimosRegistrosEncontrados = [];
+        vehiculoActualBuscado = null;
     }
 
     async function buscarPorPatente() {
@@ -271,9 +271,6 @@
             const res = await fetch(`${API_URL}/api/registros/buscar?patente=${patente}&id_taller=${tallerActualId}`);
             const data = await res.json();
             if (data.exito && data.registros.length > 0) {
-                ultimosRegistrosEncontrados = data.registros;
-                
-                // Recopilar mantenimientos inyectando el cliente que le corresponde a cada uno
                 let unificados = [];
                 data.registros.forEach(r => {
                     if (r.mantenimientos && r.mantenimientos.length > 0) {
@@ -285,11 +282,17 @@
                     }
                 });
 
-                // Ordenar mantenimientos de más reciente a más antiguo
                 unificados.sort((a, b) => new Date(b.fecha_actual) - new Date(a.fecha_actual));
 
-                let clienteInfo = data.registros[data.registros.length - 1]; // Dueño actual o más reciente
-                clienteInfo.todosMantenimientos = unificados;
+                let clienteInfo = data.registros[data.registros.length - 1]; // Dueño más reciente
+                
+                // Guardamos los datos estructurados en la variable global
+                vehiculoActualBuscado = {
+                    patente: clienteInfo.patente,
+                    nombre_completo: clienteInfo.nombre_completo,
+                    telefono: clienteInfo.telefono,
+                    todosMantenimientos: unificados
+                };
 
                 let html = `
                     <div class='card p-3 border-secondary mb-3'>
@@ -299,8 +302,8 @@
                                 <p class='mb-0 text-muted'>📱 <strong>Teléfono:</strong> ${clienteInfo.telefono} | 🚗 <strong>Patente:</strong> <span class='badge bg-dark fs-6'>${clienteInfo.patente}</span></p>
                             </div>
                             <div class='d-flex gap-2'>
-                                <button class='btn btn-success btn-sm' onclick='imprimirHistorialCompleto(0)'>📋 Imprimir Historial Completo (${unificados.length})</button>
-                                <button class='btn btn-outline-dark btn-sm' onclick='imprimirUltimoServicio(0)'>📄 Imprimir Último Servicio</button>
+                                <button class='btn btn-success btn-sm' onclick='imprimirHistorialCompleto()'>📋 Imprimir Historial Completo (${unificados.length})</button>
+                                <button class='btn btn-outline-dark btn-sm' onclick='imprimirUltimoServicio()'>📄 Imprimir Último Servicio</button>
                             </div>
                         </div>
 
@@ -346,18 +349,19 @@
         } catch(e) { alert('Error de conexión.'); }
     }
 
-    // --- IMPRESIÓN ASOCIANDO EL CLIENTE CORRECTO A CADA SERVICIO ---
-    function imprimirHistorialCompleto(index) {
-        const vehiculo = ultimosRegistrosEncontrados[index];
-        if (!vehiculo || !vehiculo.todosMantenimientos || vehiculo.todosMantenimientos.length === 0) return alert("No hay mantenimientos para imprimir.");
+    // --- IMPRESIÓN SIN COSTOS ---
+    function imprimirHistorialCompleto() {
+        if (!vehiculoActualBuscado || !vehiculoActualBuscado.todosMantenimientos || vehiculoActualBuscado.todosMantenimientos.length === 0) {
+            return alert("No hay mantenimientos para imprimir.");
+        }
 
         let ventana = window.open('', '_blank', 'width=850,height=700');
         let mantenimientosHTML = '';
 
-        vehiculo.todosMantenimientos.forEach((m, i) => {
+        vehiculoActualBuscado.todosMantenimientos.forEach((m, i) => {
             mantenimientosHTML += `
                 <tr>
-                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; font-weight: bold;">#${vehiculo.todosMantenimientos.length - i}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; font-weight: bold;">#${vehiculoActualBuscado.todosMantenimientos.length - i}</td>
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${m.fecha_actual || '-'}</td>
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${m.nombre_cliente || '-'}</td>
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'}</td>
@@ -366,14 +370,15 @@
                 </tr>`;
         });
 
-        abrirVentanaImpresion(ventana, "Historial Clínico Vehicular - Completo", vehiculo, mantenimientosHTML);
+        abrirVentanaImpresion(ventana, "Historial Clínico Vehicular - Completo", vehiculoActualBuscado, mantenimientosHTML);
     }
 
-    function imprimirUltimoServicio(index) {
-        const vehiculo = ultimosRegistrosEncontrados[index];
-        if (!vehiculo || !vehiculo.todosMantenimientos || vehiculo.todosMantenimientos.length === 0) return alert("No hay mantenimientos para imprimir.");
+    function imprimirUltimoServicio() {
+        if (!vehiculoActualBuscado || !vehiculoActualBuscado.todosMantenimientos || vehiculoActualBuscado.todosMantenimientos.length === 0) {
+            return alert("No hay mantenimientos para imprimir.");
+        }
 
-        const ultimo = vehiculo.todosMantenimientos[0]; // El más reciente
+        const ultimo = vehiculoActualBuscado.todosMantenimientos[0]; // El más reciente
         let ventana = window.open('', '_blank', 'width=850,height=700');
 
         let mantenimientosHTML = `
@@ -386,7 +391,7 @@
                 <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #c53030; font-weight: bold;">${ultimo.fecha_proximo || '-'}</td>
             </tr>`;
 
-        abrirVentanaImpresion(ventana, "Comprobante de Último Servicio Realizado", vehiculo, mantenimientosHTML);
+        abrirVentanaImpresion(ventana, "Comprobante de Último Servicio Realizado", vehiculoActualBuscado, mantenimientosHTML);
     }
 
     function abrirVentanaImpresion(ventana, tituloDocumento, vehiculo, mantenimientosHTML) {
@@ -484,7 +489,6 @@
                 cargarAvisosSemana();
                 cargarEstadisticas();
                 
-                // Volver a la solapa principal
                 const triggerEl = document.querySelector('#dashboard-tab');
                 bootstrap.Tab.getOrCreateInstance(triggerEl).show();
             } else alert('Error al guardar: ' + data.mensaje);
