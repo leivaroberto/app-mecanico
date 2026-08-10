@@ -59,7 +59,33 @@
                     </div>
                     <div id="resultadoBusqueda" class="mt-3"></div>
                 </div>
-
+                <div class="card shadow-sm mb-4">
+  <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">🔔 Recordatorios / Avisos de la Semana</h5>
+    <button class="btn btn-sm btn-outline-dark" onclick="cargarAvisosSemana()">🔄 Actualizar</button>
+  </div>
+  <div class="card-body">
+    <p class="text-muted small">Clientes que tienen próximo mantenimiento programado dentro de los próximos 7 días:</p>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Fecha Próxima</th>
+            <th>Cliente</th>
+            <th>Patente</th>
+            <th>Servicio a realizar</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="tablaAvisosBody">
+          <tr>
+            <td colspan="5" class="text-center text-muted">Haz clic en actualizar para cargar los avisos.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
                 <div class="card p-4">
                     <h4 class="mb-4 text-center">Registrar Nuevo Mantenimiento</h4>
                     
@@ -292,6 +318,64 @@
         document.getElementById('seccionLogin').classList.remove('oculto');
         document.getElementById('loginForm').reset();
     });
+    // Función para cargar los avisos de la semana
+async function cargarAvisosSemana() {
+  const tbody = document.getElementById('tablaAvisosBody');
+  tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Cargando avisos...</td></tr>';
+
+  try {
+    const res = await fetch(`${API_URL}/avisos-semana`);
+    const avisos = await res.json();
+
+    if (!avisos || avisos.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success">¡Sin vencimientos en los próximos 7 días! 🎉</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = avisos.map(item => {
+      const clienteNombre = item.clientes ? item.clientes.nombre : 'Sin nombre';
+      const clienteTel = item.clientes ? item.clientes.telefono : '';
+      const patente = item.vehiculos ? item.vehiculos.patente : 'N/A';
+      const fecha = item.fecha_proximo || 'Sin fecha';
+      const servicio = item.mantenimiento_realizado || 'Mantenimiento preventivo';
+
+      // Mensaje predeterminado de WhatsApp
+      const mensajeWA = encodeURIComponent(
+        `Hola ${clienteNombre}, te recordamos desde el Taller que tu vehículo patente ${patente} tiene programado su próximo mantenimiento (${servicio}) para la fecha ${fecha}. ¡Escríbenos para agendar tu turno!`
+      );
+
+      const linkWA = clienteTel 
+        ? `https://wa.me/${clienteTel.replace(/\D/g, '')}?text=${mensajeWA}`
+        : '#';
+
+      return `
+        <tr>
+          <td><span class="badge bg-danger">${fecha}</span></td>
+          <td><strong>${clienteNombre}</strong></td>
+          <td><span class="badge bg-secondary">${patente}</span></td>
+          <td>${servicio}</td>
+          <td>
+            ${clienteTel ? `
+              <a href="${linkWA}" target="_blank" class="btn btn-sm btn-success">
+                📲 Enviar WhatsApp
+              </a>
+            ` : '<span class="text-muted">Sin teléfono</span>'}
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+  } catch (err) {
+    console.error('Error al cargar avisos:', err);
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error al obtener avisos.</td></tr>';
+  }
+}
+
+// Cargar avisos automáticamente al iniciar sesión o cargar la app
+document.addEventListener('DOMContentLoaded', () => {
+  // Opcional: Cargar avisos al inicio
+  // cargarAvisosSemana();
+});
 </script>
 </body>
 </html>
