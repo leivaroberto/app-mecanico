@@ -10,12 +10,11 @@
         .card { border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         .header-title { color: #2c3e50; font-weight: bold; }
         .oculto { display: none !important; }
-        .btn-huella { background-color: #25d366; color: white; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="container mt-5">
+<div class="container mt-5 mb-5">
 
     <div id="seccionLogin" class="row justify-content-center mt-5">
         <div class="col-md-5">
@@ -51,6 +50,16 @@
 
         <div class="row justify-content-center">
             <div class="col-md-8">
+                
+                <div class="card p-4 mb-4 bg-light">
+                    <h5 class="header-title mb-3">🔍 Buscar Historial Vehicular</h5>
+                    <div class="input-group">
+                        <input type="text" id="buscarPatente" class="form-control text-uppercase" placeholder="Ingrese Patente (ej: AA123CD)">
+                        <button class="btn btn-primary" onclick="buscarPorPatente()">Buscar</button>
+                    </div>
+                    <div id="resultadoBusqueda" class="mt-3"></div>
+                </div>
+
                 <div class="card p-4">
                     <h4 class="mb-4 text-center">Registrar Nuevo Mantenimiento</h4>
                     
@@ -59,11 +68,11 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">Nombre del Cliente</label>
-                                <input type="text" class="form-control" id="nombre" required>
+                                <input type="text" class="form-control" id="nombre" placeholder="Ej: Juan Pérez" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Teléfono (WhatsApp)</label>
-                                <input type="tel" class="form-control" id="telefono" required>
+                                <input type="tel" class="form-control" id="telefono" placeholder="Ej: +5491122334455" required>
                             </div>
                         </div>
 
@@ -71,11 +80,11 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">Patente / Dominio</label>
-                                <input type="text" class="form-control text-uppercase" id="patente" required>
+                                <input type="text" class="form-control text-uppercase" id="patente" placeholder="AB123CD" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Kilometraje Actual</label>
-                                <input type="number" class="form-control" id="kilometraje" required>
+                                <input type="number" class="form-control" id="kilometraje" placeholder="Ej: 85000" required>
                             </div>
                         </div>
 
@@ -92,27 +101,30 @@
                         </div>
                         <div class="mb-4">
                             <label class="form-label">Trabajo Realizado</label>
-                            <textarea class="form-control" id="trabajo" rows="3" required></textarea>
+                            <textarea class="form-control" id="trabajo" rows="3" placeholder="Ej: Cambio de aceite y filtros" required></textarea>
                         </div>
 
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg">Guardar y Programar Aviso</button>
+                            <button type="submit" class="btn btn-success btn-lg">Guardar Mantenimiento</button>
                         </div>
                     </form>
                 </div>
+
             </div>
         </div>
     </div>
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
     let tallerActualId = null;
 
-    // Verificar si el teléfono soporta biometría al cargar
+    // Detectar soporte de biometría al cargar
     window.addEventListener('DOMContentLoaded', () => {
         if (!window.PublicKeyCredential) {
-            document.getElementById('btnBiometria').style.display = 'none'; // Ocultar si el celular no lo soporta
+            document.getElementById('btnBiometria').style.display = 'none';
         }
     });
 
@@ -125,35 +137,26 @@
         await ejecutarLogin(email, password);
     });
 
-    // 2. Login con Huella / Biometría
+    // 2. Login con Huella / Face ID
     document.getElementById('btnBiometria').addEventListener('click', async () => {
         const emailGuardado = localStorage.getItem('taller_email_biometrico');
+        const passGuardada = localStorage.getItem('taller_pass_biometrico');
         
-        if (!emailGuardado) {
-            alert('Primero debes ingresar una vez con tu correo y contraseña para vincular tu huella dactilar.');
+        if (!emailGuardado || !passGuardada) {
+            alert('Primero debes ingresar una vez con tu correo y contraseña para vincular tu huella.');
             return;
         }
 
         try {
-            // Activa el lector biométrico del teléfono
-            const challenge = new Uint8Array(32);
-            window.crypto.getRandomValues(challenge);
-
-            // Dispara el sensor físico de huella
-            alert('Por favor coloca tu huella en el sensor del teléfono...');
-            
-            // Si el sensor lo aprueba, recuperamos la clave guardada en el dispositivo
-            const passGuardada = localStorage.getItem('taller_pass_biometrico');
-            if (passGuardada) {
-                await ejecutarLogin(emailGuardado, passGuardada);
-            }
+            alert('Por favor coloca tu huella o confirma con Face ID...');
+            await ejecutarLogin(emailGuardado, passGuardada);
         } catch (err) {
             console.error("Error al leer huella:", err);
             alert("No se pudo verificar la huella.");
         }
     });
 
-    // Función auxiliar para conectar con el backend
+    // Conectar con Backend para Login
     async function ejecutarLogin(email, password) {
         const btnIngresar = document.getElementById('btnIngresar');
         btnIngresar.disabled = true;
@@ -171,7 +174,6 @@
             if (resultado.exito) {
                 tallerActualId = resultado.id_taller;
                 
-                // Guardar credenciales para acceso rápido con huella en este dispositivo
                 localStorage.setItem('taller_email_biometrico', email);
                 localStorage.setItem('taller_pass_biometrico', password);
 
@@ -190,6 +192,99 @@
         }
     }
 
+    // 3. Guardar Mantenimiento
+    document.getElementById('mantenimientoForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const datos = {
+            id_taller: tallerActualId,
+            nombre: document.getElementById('nombre').value,
+            telefono: document.getElementById('telefono').value,
+            patente: document.getElementById('patente').value,
+            kilometraje: document.getElementById('kilometraje').value,
+            fecha_servicio: document.getElementById('fecha_servicio').value,
+            fecha_proximo: document.getElementById('fecha_proximo').value,
+            trabajo: document.getElementById('trabajo').value
+        };
+
+        try {
+            const respuesta = await fetch('https://app-mecanico.onrender.com/api/guardar-mantenimiento', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(datos)
+            });
+
+            const resultado = await respuesta.json();
+
+            if (resultado.exito) {
+                alert('¡Mantenimiento guardado con éxito!');
+                
+                let enviar = confirm('¿Deseas abrir WhatsApp para enviarle el recordatorio al cliente?');
+                if (enviar) {
+                    let mensaje = `¡Hola ${datos.nombre}! Te escribimos del taller para recordarte que tu vehículo (${datos.patente}) se acerca a su mantenimiento el ${datos.fecha_proximo}.`;
+                    let urlWhatsApp = `https://api.whatsapp.com/send?phone=${encodeURIComponent(datos.telefono)}&text=${encodeURIComponent(mensaje)}`;
+                    window.open(urlWhatsApp, '_blank');
+                }
+
+                document.getElementById('mantenimientoForm').reset();
+            } else {
+                alert('Error al guardar: ' + resultado.mensaje);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error de conexión al guardar.');
+        }
+    });
+
+    // 4. Buscar por Patente
+    async function buscarPorPatente() {
+        const patente = document.getElementById('buscarPatente').value.trim();
+        const contenedorResultados = document.getElementById('resultadoBusqueda');
+
+        if (!patente) {
+            alert("Ingrese una patente para buscar.");
+            return;
+        }
+
+        contenedorResultados.innerHTML = "<p class='text-muted'>Buscando...</p>";
+
+        try {
+            const res = await fetch(`https://app-mecanico.onrender.com/api/registros/buscar?patente=${patente}&id_taller=${tallerActualId}`);
+            const data = await res.json();
+
+            if (data.exito && data.registros.length > 0) {
+                let html = "<ul class='list-group mt-2'>";
+                data.registros.forEach(cli => {
+                    html += `<li class='list-group-item'>
+                        <strong>Cliente:</strong> ${cli.nombre_completo} (${cli.telefono})<br>
+                        <strong>Patente:</strong> <span class='badge bg-dark'>${cli.patente}</span>
+                        <div class='mt-2'>`;
+                    
+                    if (cli.mantenimientos && cli.mantenimientos.length > 0) {
+                        cli.mantenimientos.forEach(m => {
+                            html += `<div class='border-top pt-1 mt-1 small'>
+                                📅 Servicio: ${m.fecha_actual} | 🚗 Km: ${m.kilometraje}<br>
+                                🔧 Trabajo: ${m.trabajo_realizado}<br>
+                                🔔 Próximo: ${m.fecha_proximo}
+                            </div>`;
+                        });
+                    } else {
+                        html += `<small class='text-muted'>Sin servicios registrados</small>`;
+                    }
+
+                    html += `</div></li>`;
+                });
+                html += "</ul>";
+                contenedorResultados.innerHTML = html;
+            } else {
+                contenedorResultados.innerHTML = "<div class='alert alert-warning mt-2'>No se encontraron registros para esa patente.</div>";
+            }
+        } catch (err) {
+            console.error(err);
+            contenedorResultados.innerHTML = "<div class='alert alert-danger mt-2'>Error al conectar con el servidor.</div>";
+        }
+    }
+
     // Cerrar sesión
     document.getElementById('btnCerrarSesion').addEventListener('click', function() {
         tallerActualId = null;
@@ -198,15 +293,5 @@
         document.getElementById('loginForm').reset();
     });
 </script>
-    <script src="script.js"></script>
 </body>
 </html>
-
-<div style="margin-bottom: 20px; background: #f4f4f4; padding: 15px; border-radius: 8px;">
-    <h3>🔍 Buscar Historial Vehicular</h3>
-    <div style="display: flex; gap: 10px;">
-        <input type="text" id="buscarPatente" placeholder="Ingrese Patente (ej: AA123CD)" style="text-transform: uppercase;">
-        <button onclick="buscarPorPatente()">Buscar</button>
-        <button onclick="obtenerRegistros()" style="background-color: #6c757d;">Ver Todos</button>
-    </div>
-</div>
