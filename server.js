@@ -30,7 +30,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// 2. GUARDAR MANTENIMIENTO (AHORA INCLUYE COSTO)
+// 2. GUARDAR MANTENIMIENTO (INCLUYE COSTO Y TRABAJO PRÓXIMO)
 app.post('/api/guardar-mantenimiento', async (req, res) => {
     const datos = req.body;
     try {
@@ -54,8 +54,9 @@ app.post('/api/guardar-mantenimiento', async (req, res) => {
                 fecha_actual: datos.fecha_servicio,
                 kilometraje: Number(datos.kilometraje),
                 trabajo_realizado: datos.trabajo,
+                trabajo_proximo: datos.trabajo_proximo || '', // 👈 Guardamos el trabajo sugerido para la próxima
                 fecha_proximo: datos.fecha_proximo,
-                costo: Number(datos.costo) || 0 // 👈 Novedad: Guardamos el costo
+                costo: Number(datos.costo) || 0
             });
 
         if (errorMantenimiento) return res.status(400).json({ exito: false, mensaje: 'Error al registrar mantenimiento' });
@@ -65,7 +66,7 @@ app.post('/api/guardar-mantenimiento', async (req, res) => {
     }
 });
 
-// 3. BUSCAR POR PATENTE (AHORA TRAE EL COSTO Y EL ID DEL SERVICIO PARA ELIMINAR)
+// 3. BUSCAR POR PATENTE
 app.get('/api/registros/buscar', async (req, res) => {
     const { patente, id_taller } = req.query;
     try {
@@ -73,7 +74,7 @@ app.get('/api/registros/buscar', async (req, res) => {
             .from('clientes_vehiculos')
             .select(`
                 id_cliente, nombre_completo, telefono, patente,
-                mantenimientos ( id_servicio, fecha_actual, kilometraje, trabajo_realizado, fecha_proximo, costo )
+                mantenimientos ( id_servicio, fecha_actual, kilometraje, trabajo_realizado, trabajo_proximo, fecha_proximo, costo )
             `)
             .eq('id_taller', id_taller)
             .ilike('patente', `%${patente.trim()}%`);
@@ -96,7 +97,7 @@ app.get('/avisos-semana', async (req, res) => {
         const proximoEn7DiasStr = proximoEn7Dias.toISOString().split('T')[0];
 
         let query = supabase.from('mantenimientos').select(`
-                id_servicio, fecha_proximo, trabajo_realizado,
+                id_servicio, fecha_proximo, trabajo_realizado, trabajo_proximo,
                 clientes_vehiculos!inner ( id_taller, nombre_completo, telefono, patente )
             `)
             .gte('fecha_proximo', hoyStr).lte('fecha_proximo', proximoEn7DiasStr).order('fecha_proximo', { ascending: true });
@@ -107,7 +108,8 @@ app.get('/avisos-semana', async (req, res) => {
         if (error) throw error;
 
         const avisosNormalizados = (data || []).map(item => ({
-            id: item.id_servicio, fecha_proximo: item.fecha_proximo, mantenimiento_realizado: item.trabajo_realizado,
+            id: item.id_servicio, fecha_proximo: item.fecha_proximo,
+            mantenimiento_realizado: item.trabajo_proximo ? `${item.trabajo_proximo} (Anterior: ${item.trabajo_realizado})` : item.trabajo_realizado,
             clientes: { nombre: item.clientes_vehiculos?.nombre_completo, telefono: item.clientes_vehiculos?.telefono },
             vehiculos: { patente: item.clientes_vehiculos?.patente }
         }));
@@ -117,7 +119,7 @@ app.get('/avisos-semana', async (req, res) => {
     }
 });
 
-// 5. ESTADÍSTICAS DEL MES (DASHBOARD)
+// 5. ESTADÍSTICAS DEL MES
 app.get('/api/estadisticas', async (req, res) => {
     const { id_taller } = req.query;
     try {
@@ -141,7 +143,7 @@ app.get('/api/estadisticas', async (req, res) => {
     }
 });
 
-// 6. ELIMINAR UN REGISTRO
+// 6. ELIMINAR REGISTRO
 app.delete('/api/mantenimiento/:id', async (req, res) => {
     const { id } = req.params;
     try {
