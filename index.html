@@ -272,17 +272,30 @@
             const data = await res.json();
             if (data.exito && data.registros.length > 0) {
                 ultimosRegistrosEncontrados = data.registros;
+                
+                // Recopilar mantenimientos inyectando el cliente que le corresponde a cada uno
                 let unificados = [];
-                let clienteInfo = data.registros[0];
-                data.registros.forEach(r => unificados = unificados.concat(r.mantenimientos || []));
+                data.registros.forEach(r => {
+                    if (r.mantenimientos && r.mantenimientos.length > 0) {
+                        r.mantenimientos.forEach(m => {
+                            m.nombre_cliente = r.nombre_completo;
+                            m.telefono_cliente = r.telefono;
+                            unificados.push(m);
+                        });
+                    }
+                });
+
+                // Ordenar mantenimientos de más reciente a más antiguo
                 unificados.sort((a, b) => new Date(b.fecha_actual) - new Date(a.fecha_actual));
+
+                let clienteInfo = data.registros[data.registros.length - 1]; // Dueño actual o más reciente
                 clienteInfo.todosMantenimientos = unificados;
 
                 let html = `
                     <div class='card p-3 border-secondary mb-3'>
                         <div class='d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2'>
                             <div>
-                                <h5 class='mb-1'><strong>Cliente:</strong> ${clienteInfo.nombre_completo}</h5>
+                                <h5 class='mb-1'><strong>Titular Actual:</strong> ${clienteInfo.nombre_completo}</h5>
                                 <p class='mb-0 text-muted'>📱 <strong>Teléfono:</strong> ${clienteInfo.telefono} | 🚗 <strong>Patente:</strong> <span class='badge bg-dark fs-6'>${clienteInfo.patente}</span></p>
                             </div>
                             <div class='d-flex gap-2'>
@@ -300,6 +313,7 @@
                             <li class='list-group-item px-0'>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
+                                        👤 <strong>Cliente en este servicio:</strong> ${m.nombre_cliente} (${m.telefono_cliente})<br>
                                         📅 <strong>Fecha:</strong> ${m.fecha_actual || '-'} | 🚗 <strong>Km:</strong> ${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'} | 💰 <strong>Costo:</strong> $${m.costo ? Number(m.costo).toLocaleString() : '0'}<br>
                                         🔧 <strong>Trabajo:</strong> ${m.trabajo_realizado || '-'} <br>
                                         🔔 <strong class='text-danger'>Próximo Mantenimiento:</strong> ${m.fecha_proximo || '-'}
@@ -332,7 +346,7 @@
         } catch(e) { alert('Error de conexión.'); }
     }
 
-    // --- FORMATO DE IMPRESIÓN SIN COSTOS ---
+    // --- IMPRESIÓN ASOCIANDO EL CLIENTE CORRECTO A CADA SERVICIO ---
     function imprimirHistorialCompleto(index) {
         const vehiculo = ultimosRegistrosEncontrados[index];
         if (!vehiculo || !vehiculo.todosMantenimientos || vehiculo.todosMantenimientos.length === 0) return alert("No hay mantenimientos para imprimir.");
@@ -345,6 +359,7 @@
                 <tr>
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; font-weight: bold;">#${vehiculo.todosMantenimientos.length - i}</td>
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${m.fecha_actual || '-'}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${m.nombre_cliente || '-'}</td>
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'}</td>
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${m.trabajo_realizado || '-'}</td>
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #c53030; font-weight: bold;">${m.fecha_proximo || '-'}</td>
@@ -358,13 +373,14 @@
         const vehiculo = ultimosRegistrosEncontrados[index];
         if (!vehiculo || !vehiculo.todosMantenimientos || vehiculo.todosMantenimientos.length === 0) return alert("No hay mantenimientos para imprimir.");
 
-        const ultimo = vehiculo.todosMantenimientos[0];
+        const ultimo = vehiculo.todosMantenimientos[0]; // El más reciente
         let ventana = window.open('', '_blank', 'width=850,height=700');
 
         let mantenimientosHTML = `
             <tr>
                 <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; font-weight: bold;">1</td>
                 <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${ultimo.fecha_actual || '-'}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${ultimo.nombre_cliente || '-'}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${ultimo.kilometraje ? ultimo.kilometraje.toLocaleString() + ' km' : '-'}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${ultimo.trabajo_realizado || '-'}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #c53030; font-weight: bold;">${ultimo.fecha_proximo || '-'}</td>
@@ -400,7 +416,7 @@
 
                 <div class="info-card">
                     <div>
-                        <div><strong>Cliente:</strong> ${vehiculo.nombre_completo}</div>
+                        <div><strong>Titular / Contacto Actual:</strong> ${vehiculo.nombre_completo}</div>
                         <div><strong>Teléfono / WhatsApp:</strong> ${vehiculo.telefono}</div>
                     </div>
                     <div style="text-align: right;">
@@ -413,10 +429,11 @@
                     <thead>
                         <tr>
                             <th style="text-align: center; width: 40px;">#</th>
-                            <th style="text-align: center; width: 110px;">Fecha</th>
-                            <th style="text-align: right; width: 120px;">Kilometraje</th>
+                            <th style="text-align: center; width: 100px;">Fecha</th>
+                            <th style="width: 140px;">Cliente (Dueño en el servicio)</th>
+                            <th style="text-align: right; width: 110px;">Kilometraje</th>
                             <th>Trabajo Realizado</th>
-                            <th style="text-align: center; width: 130px;">Próximo Servicio</th>
+                            <th style="text-align: center; width: 120px;">Próximo Servicio</th>
                         </tr>
                     </thead>
                     <tbody>
