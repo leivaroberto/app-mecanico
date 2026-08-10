@@ -331,84 +331,106 @@
         }
     }
 
-    // 5. Función para Imprimir o Generar PDF del Resumen del Vehículo
-    function imprimirResumenVehiculo(index) {
-        const vehiculo = ultimosRegistrosEncontrados[index];
-        if (!vehiculo) return;
+  // Función para Imprimir / Generar PDF del Historial COMPLETO del Vehículo
+function imprimirResumenVehiculo(index) {
+    const vehiculo = ultimosRegistrosEncontrados[index];
+    if (!vehiculo) return;
 
-        let ventana = window.open('', '_blank', 'width=800,height=600');
-        
-        let mantenimientosHTML = '';
-        if (vehiculo.mantenimientos && vehiculo.mantenimientos.length > 0) {
-            vehiculo.mantenimientos.forEach(m => {
-                mantenimientosHTML += `
-                    <tr>
-                        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${m.fecha_actual}</td>
-                        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${m.kilometraje} km</td>
-                        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${m.trabajo_realizado}</td>
-                        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${m.fecha_proximo}</td>
-                    </tr>
-                `;
-            });
-        } else {
-            mantenimientosHTML = `<tr><td colspan="4" style="text-align:center; padding: 15px;">No hay servicios registrados.</td></tr>`;
-        }
+    let ventana = window.open('', '_blank', 'width=850,height=700');
+    
+    let mantenimientosHTML = '';
+    
+    // Recorremos TODO el historial de mantenimientos registrados para este vehículo
+    if (vehiculo.mantenimientos && vehiculo.mantenimientos.length > 0) {
+        // Ordenar del más reciente al más antiguo (opcional)
+        const historialOrdenado = [...vehiculo.mantenimientos].sort((a, b) => new Date(b.fecha_actual) - new Date(a.fecha_actual));
 
-        ventana.document.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Historial Vehicular - ${vehiculo.patente}</title>
-                <style>
-                    body { font-family: Arial, sans-serif; padding: 30px; color: #333; }
-                    .header { text-align: center; border-bottom: 2px solid #2c3e50; padding-bottom: 15px; margin-bottom: 20px; }
-                    .info-box { background: #f8f9fa; border: 1px solid #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-                    th { background-color: #2c3e50; color: white; padding: 10px; text-align: left; }
-                    .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #777; border-top: 1px solid #ddd; padding-top: 10px; }
-                </style>
-            </head>
-            <body>
-                <div class="header">
-                    <h2>🔧 ${nombreTallerActual}</h2>
-                    <h3>Historial de Mantenimientos Preventivos</h3>
-                </div>
-
-                <div class="info-box">
-                    <p><strong>Cliente:</strong> ${vehiculo.nombre_completo}</p>
-                    <p><strong>Teléfono:</strong> ${vehiculo.telefono}</p>
-                    <p><strong>Patente / Dominio:</strong> <span style="font-size: 18px; font-weight: bold; background: #e2e8f0; padding: 2px 8px; border-radius: 4px;">${vehiculo.patente}</span></p>
-                </div>
-
-                <h4>Trabajos Realizados</h4>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Kilometraje</th>
-                            <th>Trabajo Realizado</th>
-                            <th>Próximo Servicio</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${mantenimientosHTML}
-                    </tbody>
-                </table>
-
-                <div class="footer">
-                    <p>Comprobante generado automáticamente por AppMecanico | ¡Gracias por su confianza!</p>
-                </div>
-
-                <script>
-                    window.onload = function() {
-                        window.print();
-                    };
-                <\/script>
-            </body>
-            </html>
-        `);
-        ventana.document.close();
+        historialOrdenado.forEach((m, i) => {
+            mantenimientosHTML += `
+                <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: bold; text-align: center;">#${historialOrdenado.length - i}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${m.fecha_actual || '-'}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${m.trabajo_realizado || '-'}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #c53030; font-weight: bold;">${m.fecha_proximo || '-'}</td>
+                </tr>
+            `;
+        });
+    } else {
+        mantenimientosHTML = `<tr><td colspan="5" style="text-align:center; padding: 20px; color: #718096;">No hay servicios registrados en el historial para este vehículo.</td></tr>`;
     }
+
+    ventana.document.write(`
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+            <meta charset="UTF-8">
+            <title>Historial Completo - Patente ${vehiculo.patente}</title>
+            <style>
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; color: #2d3748; background-color: #fff; }
+                .header { text-align: center; border-bottom: 3px solid #2b6cb0; padding-bottom: 15px; margin-bottom: 25px; }
+                .header h2 { margin: 0; color: #2b6cb0; font-size: 24px; text-transform: uppercase; }
+                .header h3 { margin: 5px 0 0 0; color: #4a5568; font-size: 16px; font-weight: normal; }
+                .info-card { background: #f7fafc; border: 1px solid #e2e8f0; border-left: 5px solid #2b6cb0; padding: 15px; border-radius: 6px; margin-bottom: 25px; display: flex; justify-content: space-between; }
+                .info-group { margin-bottom: 5px; }
+                .patente-badge { font-size: 20px; font-weight: bold; background: #2d3748; color: #fff; padding: 4px 12px; border-radius: 4px; letter-spacing: 2px; display: inline-block; }
+                table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                th { background-color: #2b6cb0; color: white; padding: 10px; text-align: left; font-size: 13px; text-transform: uppercase; }
+                .footer { margin-top: 50px; text-align: center; font-size: 11px; color: #a0aec0; border-top: 1px solid #e2e8f0; padding-top: 15px; }
+                @media print {
+                    body { padding: 0; }
+                    .no-print { display: none; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h2>🔧 ${nombreTallerActual}</h2>
+                <h3>Ficha de Historial Clínico Vehicular</h3>
+            </div>
+
+            <div class="info-card">
+                <div>
+                    <div class="info-group"><strong>Cliente:</strong> ${vehiculo.nombre_completo}</div>
+                    <div class="info-group"><strong>Teléfono / WhatsApp:</strong> ${vehiculo.telefono}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 12px; color: #718096; margin-bottom: 4px;">DOMINIO / PATENTE</div>
+                    <span class="patente-badge">${vehiculo.patente}</span>
+                </div>
+            </div>
+
+            <h4 style="color: #2d3748; border-bottom: 2px solid #edf2f7; padding-bottom: 8px;">📋 Historial de Mantenimientos e Intervenciones (${vehiculo.mantenimientos ? vehiculo.mantenimientos.length : 0})</h4>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th style="text-align: center; width: 50px;">#</th>
+                        <th style="text-align: center; width: 110px;">Fecha</th>
+                        <th style="text-align: right; width: 110px;">Kilometraje</th>
+                        <th>Trabajo / Mantenimiento Realizado</th>
+                        <th style="text-align: center; width: 120px;">Próximo Mantenimiento</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${mantenimientosHTML}
+                </tbody>
+            </table>
+
+            <div class="footer">
+                <p>Documento oficial generado por AppMecanico para <strong>${nombreTallerActual}</strong> | Impreso el: ${new Date().toLocaleDateString('es-AR')}</p>
+            </div>
+
+            <script>
+                window.onload = function() {
+                    window.print();
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+    ventana.document.close();
+}
 
     // 6. Cargar Avisos de la Semana
     async function cargarAvisosSemana() {
