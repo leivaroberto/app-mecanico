@@ -183,5 +183,37 @@ app.delete('/api/mantenimiento/:id', async (req, res) => {
         res.status(500).json({ exito: false, mensaje: 'Error al eliminar.' });
     }
 });
+// Endpoint para buscar historial por patente o por rango de fechas
+app.get('/api/historial-servicios', async (req, res) => {
+    try {
+        const { patente, fechaInicio, fechaFin } = req.query;
 
+        let query = supabase
+            .from('mantenimientos')
+            .select('*')
+            .order('fecha', { ascending: false });
+
+        // Filtrar por patente si se ingresó alguna
+        if (patente && patente.trim() !== '') {
+            query = query.ilike('patente', `%${patente.trim()}%`);
+        }
+
+        // Filtrar por rango de fechas si se seleccionaron
+        if (fechaInicio) {
+            query = query.gte('fecha', fechaInicio);
+        }
+        if (fechaFin) {
+            query = query.lte('fecha', fechaFin);
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+
+        res.json({ success: true, data });
+    } catch (error) {
+        console.error('Error al obtener el historial:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
 app.listen(port, () => console.log(`Servidor de AppMecanico corriendo en puerto ${port}`));
