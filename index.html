@@ -702,52 +702,43 @@
         } catch (err) { alert('Error de conexión al guardar.'); }
     });
  //   --------------------------------------------
-// --- LÓGICA DE BIOMETRÍA REAL (WEBAUTHN) ---
-window.addEventListener('DOMContentLoaded', () => {
-    // Verificar si el dispositivo soporta biometría nativa
-    if (!window.PublicKeyCredential || !PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
-        document.getElementById('btnBiometria').style.display = 'none';
-    }
-});
-
+// --- LÓGICA DE BIOMETRÍA ESTRICTA Y SEGURA ---
 document.getElementById('btnBiometria').addEventListener('click', async () => {
     const e = localStorage.getItem('taller_email_biometrico');
     const p = localStorage.getItem('taller_pass_biometrico');
 
     if (!e || !p) {
-        return alert('Primero debes ingresar una vez con tu correo y contraseña para activar el ingreso por huella.');
+        return alert('No hay credenciales guardadas. Primero debes ingresar manualmente con tu correo y contraseña.');
     }
 
-    // Comprobamos si el navegador soporta verificación local
+    // Verificar si el navegador soporta credenciales biométricas
     if (window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
         try {
-            // Intentamos solicitar la autenticación nativa
+            // Intentar autenticación biométrica estricta
             const credential = await navigator.credentials.get({
                 publicKey: {
                     challenge: new Uint8Array([1, 2, 3, 4]),
                     timeout: 60000,
-                    userVerification: "required", // Exige huella o Face ID
-                    allowCredentials: [] // Evita buscar passkeys registradas en el servidor
+                    userVerification: "required" // Exige obligatoriamente huella / Face ID
                 }
             });
 
+            // Solo si la lectura biométrica fue EXITOSA se concede el acceso
             if (credential) {
                 await ejecutarLogin(e, p);
+            } else {
+                alert('No se pudo verificar la huella/Face ID. Por favor ingresa con correo y contraseña.');
             }
         } catch (err) {
-            // Si el dispositivo tira el error de "No hay llaves" o el navegador no soporta Passkeys
-            // mostramos la confirmación por PIN o sistema del dispositivo
-            console.log("Fallback biometria:", err);
-            
-            // Si canceló la huella o dio error
-            if (err.name === 'NotAllowedError') {
-                return alert('Lectura de huella cancelada o no reconocida.');
-            }
+            console.error("Error/Cancelación de biometría:", err);
 
-            // Fallback de seguridad: Si el navegador exige registro previo de Passkey
-            if (confirm('¿Confirmar ingreso mediante credenciales guardadas en este dispositivo?')) {
-                await ejecutarLogin(e, p);
+            // Manejo de errores específicos
+            if (err.name === 'NotAllowedError') {
+                alert('Lectura de huella cancelada o no reconocida. Debes ingresar con tu correo y contraseña.');
+            } else {
+                alert('No hay llaves de acceso o biometría disponible en este dispositivo. Por favor ingresa con tu correo y contraseña.');
             }
+            // 🛑 NO SE PERMITE EL INGRESO AUTOMÁTICO
         }
     } else {
         alert('Este dispositivo o navegador no soporta lectura de huella dactilar.');
