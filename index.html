@@ -151,7 +151,7 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Trabajo Realizado</label>
-                            <textarea class="form-control" id="trabajo" rows="2" placeholder="Ej: Cambio de aceite, filtro y bujías" required></textarea>
+                            <textarea class="form-control" id="trabajo" rows="3" placeholder="Ej: Cambio de aceite, filtro y bujías" required></textarea>
                         </div>
                         <div class="mb-4">
                             <label class="form-label text-primary font-weight-bold">Trabajo a realizar en la próxima visita (Sugerido)</label>
@@ -246,12 +246,16 @@
                 const nombre = i.clientes?.nombre || 'Sin nombre';
                 const tel = i.clientes?.telefono || '';
                 const pat = i.vehiculos?.patente || 'N/A';
-                const mje = encodeURIComponent(`Hola ${nombre}, te recordamos desde el Taller que tu vehículo (${pat}) tiene programado su próximo mantenimiento (${i.mantenimiento_realizado}) para la fecha ${i.fecha_proximo}.`);
+                const servicio = i.mantenimiento_realizado || 'Mantenimiento preventivo';
+                
+                // Mensaje de WhatsApp corregido con el trabajo próximo
+                const mje = encodeURIComponent(`Hola ${nombre}, te recordamos desde el Taller que tu vehículo (${pat}) tiene programado su próximo servicio (${servicio}) para la fecha ${i.fecha_proximo}. ¡Escríbenos para agendar tu turno!`);
+                
                 return `<tr>
                     <td><span class="badge bg-danger">${i.fecha_proximo}</span></td>
                     <td><strong>${nombre}</strong></td>
                     <td><span class="badge bg-secondary">${pat}</span></td>
-                    <td>${i.mantenimiento_realizado}</td>
+                    <td><strong class="text-primary">${servicio}</strong></td>
                     <td>${tel ? `<a href="https://wa.me/${tel.replace(/\D/g, '')}?text=${mje}" target="_blank" class="btn btn-sm btn-success">📲 Enviar WA</a>` : '<span class="text-muted">Sin teléfono</span>'}</td>
                 </tr>`;
             }).join('');
@@ -288,7 +292,7 @@
 
                 unificados.sort((a, b) => new Date(b.fecha_actual) - new Date(a.fecha_actual));
 
-                let clienteInfo = data.registros[data.registros.length - 1]; // Dueño más reciente
+                let clienteInfo = data.registros[data.registros.length - 1];
                 
                 vehiculoActualBuscado = {
                     patente: clienteInfo.patente,
