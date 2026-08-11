@@ -12,6 +12,8 @@
         .oculto { display: none !important; }
         .nav-tabs .nav-link { font-weight: 600; color: #6c757d; }
         .nav-tabs .nav-link.active { color: #2b6cb0; font-weight: bold; }
+        .btn-ojo { background: transparent; border: none; color: white; cursor: pointer; padding: 0 5px; font-size: 1.1rem; }
+        .btn-ojo:hover { opacity: 0.8; }
     </style>
 </head>
 <body>
@@ -52,7 +54,7 @@
                 <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab">📊 Inicio</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="buscar-tab" data-bs-toggle="tab" data-bs-target="#buscar" type="button" role="tab">🔍 Buscar Vehículo</button>
+                <button class="nav-link" id="buscar-tab" data-bs-toggle="tab" data-bs-target="#buscar" type="button" role="tab">🔍 Buscar Vehículo / Cliente</button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="nuevo-tab" data-bs-toggle="tab" data-bs-target="#nuevo" type="button" role="tab">📝 Registrar Servicio</button>
@@ -73,9 +75,12 @@
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="card bg-success text-white p-3 text-center mt-3 mt-md-0">
-                            <h5>Ingresos Generados este Mes</h5>
-                            <h2 id="statIngresos">$ --</h2>
+                        <div class="card bg-success text-white p-3 text-center mt-3 mt-md-0 position-relative">
+                            <div class="d-flex justify-content-center align-items-center gap-2">
+                                <h5 class="mb-0">Ingresos Generados este Mes</h5>
+                                <button type="button" class="btn-ojo" id="btnToggleIngresos" onclick="togglePrivacidadIngresos()" title="Ocultar/Mostrar monto">👁️</button>
+                            </div>
+                            <h2 id="statIngresos" class="mt-2">$ --</h2>
                         </div>
                     </div>
                 </div>
@@ -103,11 +108,11 @@
             <div class="tab-pane fade" id="buscar" role="tabpanel">
                 <div class="card p-4 mb-4 bg-light">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="header-title mb-0">🔍 Buscador Vehicular</h5>
+                        <h5 class="header-title mb-0">🔍 Buscador Vehicular / Cliente</h5>
                         <button class="btn btn-sm btn-secondary" onclick="limpiarBusqueda()">❌ Limpiar Búsqueda</button>
                     </div>
                     <div class="input-group">
-                        <input type="text" id="buscarPatente" class="form-control text-uppercase" placeholder="Ingrese Patente (ej: AA123CD)">
+                        <input type="text" id="buscarPatente" class="form-control" placeholder="Ingrese Patente (ej: AA123CD) o Nombre del Cliente (ej: Juan Pérez)">
                         <button class="btn btn-primary" onclick="buscarPorPatente()">Buscar</button>
                     </div>
                     <div id="resultadoBusqueda" class="mt-4"></div>
@@ -187,8 +192,8 @@
                     <div class="card p-3 bg-light mb-4 border-0">
                         <form id="form-filtro-historial" onsubmit="buscarHistorial(event)" class="row g-3 align-items-end">
                             <div class="col-md-3">
-                                <label for="filtro-patente" class="form-label fw-bold">Patente:</label>
-                                <input type="text" id="filtro-patente" class="form-control text-uppercase" placeholder="Ej: ABC123">
+                                <label for="filtro-patente" class="form-label fw-bold">Patente o Cliente:</label>
+                                <input type="text" id="filtro-patente" class="form-control" placeholder="Ej: ABC123 / Juan Pérez">
                             </div>
                             <div class="col-md-3">
                                 <label for="filtro-fecha-inicio" class="form-label fw-bold">Desde:</label>
@@ -239,6 +244,10 @@
     let tallerActualId = null;
     let nombreTallerActual = "Taller Mecánico";
     let vehiculoActualBuscado = null;
+    
+    // Variables para privacidad de ingresos
+    let ingresosMontoReal = 0;
+    let ingresosOcultos = false;
 
     // --- LOGICA DE LOGIN Y BIOMETRIA ---
     window.addEventListener('DOMContentLoaded', () => {
@@ -293,9 +302,27 @@
             const data = await res.json();
             if(data.exito){
                 document.getElementById('statVehiculos').innerText = data.totalVehiculos;
-                document.getElementById('statIngresos').innerText = `$ ${data.ingresosMes.toLocaleString()}`;
+                ingresosMontoReal = data.ingresosMes;
+                actualizarVistaIngresos();
             }
         } catch(e) { console.error("Error al cargar estadísticas:", e); }
+    }
+
+    function togglePrivacidadIngresos() {
+        ingresosOcultos = !ingresosOcultos;
+        actualizarVistaIngresos();
+    }
+
+    function actualizarVistaIngresos() {
+        const elem = document.getElementById('statIngresos');
+        const btn = document.getElementById('btnToggleIngresos');
+        if (ingresosOcultos) {
+            elem.innerText = '$ ****';
+            btn.innerText = '🙈';
+        } else {
+            elem.innerText = `$ ${ingresosMontoReal.toLocaleString()}`;
+            btn.innerText = '👁️';
+        }
     }
 
     async function cargarAvisosSemana() {
@@ -348,7 +375,7 @@
         }
     }
 
-    // --- BUSQUEDA, LIMPIAR Y ELIMINAR ---
+    // --- BUSQUEDA POR PATENTE O CLIENTE ---
     function limpiarBusqueda() {
         document.getElementById('buscarPatente').value = '';
         document.getElementById('resultadoBusqueda').innerHTML = '';
@@ -356,81 +383,94 @@
     }
 
     async function buscarPorPatente() {
-        const patente = document.getElementById('buscarPatente').value.trim();
+        const termino = document.getElementById('buscarPatente').value.trim();
         const contenedor = document.getElementById('resultadoBusqueda');
-        if (!patente) return alert("Ingrese una patente para buscar.");
+        if (!termino) return alert("Ingrese una patente o nombre de cliente para buscar.");
         contenedor.innerHTML = "<p class='text-muted'>Buscando en la base de datos...</p>";
 
         try {
-            const res = await fetch(`${API_URL}/api/registros/buscar?patente=${patente}&id_taller=${tallerActualId}`);
+            const res = await fetch(`${API_URL}/api/registros/buscar?termino=${encodeURIComponent(termino)}&id_taller=${tallerActualId}`);
             const data = await res.json();
             if (data.exito && data.registros.length > 0) {
-                let unificados = [];
-                data.registros.forEach(r => {
-                    if (r.mantenimientos && r.mantenimientos.length > 0) {
-                        r.mantenimientos.forEach(m => {
-                            m.nombre_cliente = r.nombre_completo;
-                            m.telefono_cliente = r.telefono;
-                            unificados.push(m);
+                let htmlResultado = '';
+                
+                // Si la búsqueda trajo varios clientes/vehículos (ej: buscar "Juan")
+                data.registros.forEach(clienteInfo => {
+                    let unificados = clienteInfo.mantenimientos || [];
+                    unificados.forEach(m => {
+                        m.nombre_cliente = clienteInfo.nombre_completo;
+                        m.telefono_cliente = clienteInfo.telefono;
+                    });
+                    unificados.sort((a, b) => new Date(b.fecha_actual) - new Date(a.fecha_actual));
+
+                    let vehiculoDesc = `${clienteInfo.marca || ''} ${clienteInfo.modelo || ''}`.trim();
+
+                    htmlResultado += `
+                        <div class='card p-3 border-secondary mb-4'>
+                            <div class='d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2'>
+                                <div>
+                                    <h5 class='mb-1'><strong>Cliente:</strong> ${clienteInfo.nombre_completo}</h5>
+                                    <p class='mb-0 text-muted'>📱 <strong>Teléfono:</strong> ${clienteInfo.telefono} ${vehiculoDesc ? ' | 🚗 <strong>Vehículo:</strong> ' + vehiculoDesc : ''} | 🚗 <strong>Patente:</strong> <span class='badge bg-dark fs-6'>${clienteInfo.patente}</span></p>
+                                </div>
+                                <div class='d-flex gap-2'>
+                                    <button class='btn btn-success btn-sm' onclick='prepararEImprimirCompleto(${JSON.stringify(clienteInfo).replace(/'/g, "&apos;")})'>📋 Imprimir Historial Completo (${unificados.length})</button>
+                                    <button class='btn btn-outline-dark btn-sm' onclick='prepararEImprimirUltimo(${JSON.stringify(clienteInfo).replace(/'/g, "&apos;")})'>📄 Imprimir Último Servicio</button>
+                                </div>
+                            </div>
+
+                            <h6 class='border-bottom pb-2 mt-2'><strong>Historial de Intervenciones:</strong></h6>
+                            <ul class='list-group list-group-flush'>`;
+
+                    if (unificados.length > 0) {
+                        unificados.forEach(m => {
+                            htmlResultado += `
+                                <li class='list-group-item px-0'>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            📅 <strong>Fecha:</strong> ${m.fecha_actual || '-'} | 🚗 <strong>Km:</strong> ${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'} | 💰 <strong>Costo:</strong> $${m.costo ? Number(m.costo).toLocaleString() : '0'}<br>
+                                            🔧 <strong>Trabajo Realizado:</strong> ${m.trabajo_realizado || '-'}<br>
+                                            🎯 <strong class='text-primary'>Próxima Visita (A Realizar):</strong> ${m.trabajo_proximo || 'No especificado'}<br>
+                                            🔔 <strong class='text-danger'>Fecha Próxima:</strong> ${m.fecha_proximo || 'Sin agendar'} ${m.aviso_enviado ? '✅ (Aviso enviado)' : ''}
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro(${m.id_servicio})">🗑️ Eliminar</button>
+                                    </div>
+                                </li>`;
                         });
+                    } else {
+                        htmlResultado += `<li class='list-group-item text-muted'>No hay mantenimientos registrados para este vehículo.</li>`;
                     }
+                    htmlResultado += "</ul></div>";
                 });
 
-                unificados.sort((a, b) => new Date(b.fecha_actual) - new Date(a.fecha_actual));
-
-                let clienteInfo = data.registros[data.registros.length - 1];
-                let vehiculoDesc = `${clienteInfo.marca || ''} ${clienteInfo.modelo || ''}`.trim();
-                
-                vehiculoActualBuscado = {
-                    patente: clienteInfo.patente,
-                    marca: clienteInfo.marca,
-                    modelo: clienteInfo.modelo,
-                    nombre_completo: clienteInfo.nombre_completo,
-                    telefono: clienteInfo.telefono,
-                    todosMantenimientos: unificados
-                };
-
-                let html = `
-                    <div class='card p-3 border-secondary mb-3'>
-                        <div class='d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2'>
-                            <div>
-                                <h5 class='mb-1'><strong>Titular Actual:</strong> ${clienteInfo.nombre_completo}</h5>
-                                <p class='mb-0 text-muted'>📱 <strong>Teléfono:</strong> ${clienteInfo.telefono} ${vehiculoDesc ? ' | 🚗 <strong>Vehículo:</strong> ' + vehiculoDesc : ''} | 🚗 <strong>Patente:</strong> <span class='badge bg-dark fs-6'>${clienteInfo.patente}</span></p>
-                            </div>
-                            <div class='d-flex gap-2'>
-                                <button class='btn btn-success btn-sm' onclick='imprimirHistorialCompleto()'>📋 Imprimir Historial Completo (${unificados.length})</button>
-                                <button class='btn btn-outline-dark btn-sm' onclick='imprimirUltimoServicio()'>📄 Imprimir Último Servicio</button>
-                            </div>
-                        </div>
-
-                        <h6 class='border-bottom pb-2 mt-2'><strong>Historial de Intervenciones:</strong></h6>
-                        <ul class='list-group list-group-flush'>`;
-
-                if (unificados.length > 0) {
-                    unificados.forEach(m => {
-                        html += `
-                            <li class='list-group-item px-0'>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        👤 <strong>Cliente en este servicio:</strong> ${m.nombre_cliente} (${m.telefono_cliente})<br>
-                                        📅 <strong>Fecha:</strong> ${m.fecha_actual || '-'} | 🚗 <strong>Km:</strong> ${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'} | 💰 <strong>Costo:</strong> $${m.costo ? Number(m.costo).toLocaleString() : '0'}<br>
-                                        🔧 <strong>Trabajo Realizado:</strong> ${m.trabajo_realizado || '-'}<br>
-                                        🎯 <strong class='text-primary'>Próxima Visita (A Realizar):</strong> ${m.trabajo_proximo || 'No especificado'}<br>
-                                        🔔 <strong class='text-danger'>Fecha Próxima:</strong> ${m.fecha_proximo || 'Sin agendar'} ${m.aviso_enviado ? '✅ (Aviso enviado)' : ''}
-                                    </div>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro(${m.id_servicio})">🗑️ Eliminar</button>
-                                </div>
-                            </li>`;
-                    });
-                } else {
-                    html += `<li class='list-group-item text-muted'>No hay mantenimientos registrados para este vehículo.</li>`;
-                }
-
-                contenedor.innerHTML = html + "</ul></div>";
+                contenedor.innerHTML = htmlResultado;
             } else {
-                contenedor.innerHTML = "<div class='alert alert-warning mt-2'>No se encontraron registros para esa patente.</div>";
+                contenedor.innerHTML = "<div class='alert alert-warning mt-2'>No se encontraron registros para la búsqueda realizada.</div>";
             }
         } catch (e) { contenedor.innerHTML = "<div class='alert alert-danger mt-2'>Error al conectar con el servidor.</div>"; }
+    }
+
+    function prepararEImprimirCompleto(clienteInfo) {
+        vehiculoActualBuscado = {
+            patente: clienteInfo.patente,
+            marca: clienteInfo.marca,
+            modelo: clienteInfo.modelo,
+            nombre_completo: clienteInfo.nombre_completo,
+            telefono: clienteInfo.telefono,
+            todosMantenimientos: clienteInfo.mantenimientos || []
+        };
+        imprimirHistorialCompleto();
+    }
+
+    function prepararEImprimirUltimo(clienteInfo) {
+        vehiculoActualBuscado = {
+            patente: clienteInfo.patente,
+            marca: clienteInfo.marca,
+            modelo: clienteInfo.modelo,
+            nombre_completo: clienteInfo.nombre_completo,
+            telefono: clienteInfo.telefono,
+            todosMantenimientos: clienteInfo.mantenimientos || []
+        };
+        imprimirUltimoServicio();
     }
 
     // --- SOLAPA: HISTORIAL GENERAL POR FILTROS ---
@@ -505,7 +545,7 @@
         } catch(e) { alert('Error de conexión.'); }
     }
 
-    // --- IMPRESIÓN CON MARCA Y MODELO ---
+    // --- IMPRESIÓN ---
     function imprimirHistorialCompleto() {
         if (!vehiculoActualBuscado || !vehiculoActualBuscado.todosMantenimientos || vehiculoActualBuscado.todosMantenimientos.length === 0) {
             return alert("No hay mantenimientos para imprimir.");
@@ -519,7 +559,7 @@
                 <tr>
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; font-weight: bold;">#${vehiculoActualBuscado.todosMantenimientos.length - i}</td>
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${m.fecha_actual || '-'}</td>
-                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${m.nombre_cliente || '-'}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${vehiculoActualBuscado.nombre_completo || '-'}</td>
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'}</td>
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${m.trabajo_realizado || '-'}</td>
                     <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; color: #2b6cb0;">${m.trabajo_proximo || '-'}</td>
@@ -542,7 +582,7 @@
             <tr>
                 <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; font-weight: bold;">1</td>
                 <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${ultimo.fecha_actual || '-'}</td>
-                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${ultimo.nombre_cliente || '-'}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${vehiculoActualBuscado.nombre_completo || '-'}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${ultimo.kilometraje ? ultimo.kilometraje.toLocaleString() + ' km' : '-'}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${ultimo.trabajo_realizado || '-'}</td>
                 <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; color: #2b6cb0;">${ultimo.trabajo_proximo || '-'}</td>
