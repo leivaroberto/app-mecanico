@@ -30,7 +30,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// 2. GUARDAR MANTENIMIENTO
+// 2. GUARDAR MANTENIMIENTO (CON CONTROL DE NULL EN FECHAS VACÍAS)
 app.post('/api/guardar-mantenimiento', async (req, res) => {
     const datos = req.body;
     try {
@@ -47,6 +47,11 @@ app.post('/api/guardar-mantenimiento', async (req, res) => {
 
         const id_cliente = clienteData[0].id_cliente;
 
+        // Si fecha_proximo viene vacía (""), la convertimos a NULL para que PostgreSQL no falle
+        const fechaProximoFinal = (datos.fecha_proximo && datos.fecha_proximo.trim() !== '') 
+            ? datos.fecha_proximo 
+            : null;
+
         const { error: errorMantenimiento } = await supabase
             .from('mantenimientos')
             .insert({
@@ -54,14 +59,19 @@ app.post('/api/guardar-mantenimiento', async (req, res) => {
                 fecha_actual: datos.fecha_servicio,
                 kilometraje: Number(datos.kilometraje),
                 trabajo_realizado: datos.trabajo,
-                trabajo_proximo: datos.trabajo_proximo || '',
-                fecha_proximo: datos.fecha_proximo,
+                trabajo_proximo: datos.trabajo_proximo || null,
+                fecha_proximo: fechaProximoFinal, // 👈 Se envía NULL si está vacía
                 costo: Number(datos.costo) || 0
             });
 
-        if (errorMantenimiento) return res.status(400).json({ exito: false, mensaje: 'Error al registrar mantenimiento' });
+        if (errorMantenimiento) {
+            console.error("Error Supabase Mantenimiento:", errorMantenimiento);
+            return res.status(400).json({ exito: false, mensaje: 'Error al registrar mantenimiento: ' + errorMantenimiento.message });
+        }
+        
         res.json({ exito: true, mensaje: '¡Guardado con éxito!' });
     } catch (err) {
+        console.error("Error servidor:", err);
         res.status(500).json({ exito: false, mensaje: 'Error del servidor.' });
     }
 });
@@ -86,7 +96,7 @@ app.get('/api/registros/buscar', async (req, res) => {
     }
 });
 
-// 4. AVISOS DE LA SEMANA (Mapea el servicio a realizar al trabajo_proximo)
+// 4. AVISOS DE LA SEMANA
 app.get('/avisos-semana', async (req, res) => {
     const { id_taller } = req.query;
     try {
@@ -100,7 +110,10 @@ app.get('/avisos-semana', async (req, res) => {
                 id_servicio, fecha_proximo, trabajo_realizado, trabajo_proximo,
                 clientes_vehiculos!inner ( id_taller, nombre_completo, telefono, patente )
             `)
-            .gte('fecha_proximo', hoyStr).lte('fecha_proximo', proximoEn7DiasStr).order('fecha_proximo', { ascending: true });
+            .not('fecha_proximo', 'is', null) // 👈 Ignora los que son NULL
+            .gte('fecha_proximo', hoyStr)
+            .lte('fecha_proximo', proximoEn7DiasStr)
+            .order('fecha_proximo', { ascending: true });
 
         if (id_taller) query = query.eq('clientes_vehiculos.id_taller', id_taller);
         
@@ -110,7 +123,6 @@ app.get('/avisos-semana', async (req, res) => {
         const avisosNormalizados = (data || []).map(item => ({
             id: item.id_servicio,
             fecha_proximo: item.fecha_proximo,
-            // Si existe trabajo_proximo lo usa; de lo contrario usa trabajo_realizado como respaldo
             mantenimiento_realizado: item.trabajo_proximo && item.trabajo_proximo.trim() !== '' ? item.trabajo_proximo : item.trabajo_realizado,
             clientes: { nombre: item.clientes_vehiculos?.nombre_completo, telefono: item.clientes_vehiculos?.telefono },
             vehiculos: { patente: item.clientes_vehiculos?.patente }
