@@ -30,25 +30,53 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// 2. GUARDAR MANTENIMIENTO
+// 2. GUARDAR MANTENIMIENTO (CORREGIDO PARA EVITAR DUPLICADOS)
 app.post('/api/guardar-mantenimiento', async (req, res) => {
     const datos = req.body;
     try {
-        const { data: clienteData, error: errorCliente } = await supabase
+        const tallerId = datos.id_taller || 1;
+        const patenteLimpia = datos.patente.toUpperCase().trim();
+
+        // 1. Verificar si el vehículo/patente ya existe en este taller
+        const { data: clienteExistente, error: errorBusqueda } = await supabase
             .from('clientes_vehiculos')
-            .insert({
-                id_taller: datos.id_taller || 1,
-                nombre_completo: datos.nombre,
-                telefono: datos.telefono,
-                patente: datos.patente.toUpperCase().trim(),
-                marca: datos.marca || '',
-                modelo: datos.modelo || ''
-            }).select();
+            .select('id_cliente')
+            .eq('id_taller', tallerId)
+            .eq('patente', patenteLimpia)
+            .maybeSingle();
 
-        if (errorCliente || !clienteData) return res.status(400).json({ exito: false, mensaje: 'Error al registrar cliente' });
+        let id_cliente;
 
-        const id_cliente = clienteData[0].id_cliente;
+        if (clienteExistente) {
+            // Si el auto ya existe, usamos su ID y actualizamos sus datos (por si cambió de teléfono o dueño)
+            id_cliente = clienteExistente.id_cliente;
+            await supabase
+                .from('clientes_vehiculos')
+                .update({
+                    nombre_completo: datos.nombre,
+                    telefono: datos.telefono,
+                    marca: datos.marca || '',
+                    modelo: datos.modelo || ''
+                })
+                .eq('id_cliente', id_cliente);
+        } else {
+            // Si no existe, lo insertamos como cliente nuevo
+            const { data: clienteNuevo, error: errorCliente } = await supabase
+                .from('clientes_vehiculos')
+                .insert({
+                    id_taller: tallerId,
+                    nombre_completo: datos.nombre,
+                    telefono: datos.telefono,
+                    patente: patenteLimpia,
+                    marca: datos.marca || '',
+                    modelo: datos.modelo || ''
+                }).select();
 
+            if (errorCliente || !clienteNuevo) return res.status(400).json({ exito: false, mensaje: 'Error al registrar cliente' });
+            id_cliente = clienteNuevo[0].id_cliente;
+        }
+
+        // 2. Guardar el mantenimiento asociado a ese cliente
         const fechaProximoFinal = (datos.fecha_proximo && datos.fecha_proximo.trim() !== '') 
             ? datos.fecha_proximo 
             : null;
@@ -72,18 +100,18 @@ app.post('/api/guardar-mantenimiento', async (req, res) => {
         
         res.json({ exito: true, mensaje: '¡Guardado con éxito!' });
     } catch (err) {
+        console.error("Error guardando mantenimiento:", err);
         res.status(500).json({ exito: false, mensaje: 'Error del servidor.' });
     }
 });
 
-// 3. BUSCAR POR PATENTE O NOMBRE DE CLIENTE (FILTRADO DE SEGURIDAD ESTRICTO)
+// 3. BUSCAR POR PATENTE O NOMBRE DE CLIENTE
 app.get('/api/registros/buscar', async (req, res) => {
     const { termino, id_taller } = req.query;
     try {
         const busqueda = (termino || '').trim();
         if (!busqueda) return res.json({ exito: true, registros: [] });
 
-        // Consulta estricta filtrando SIEMPRE por el taller correspondiente
         const { data, error } = await supabase
             .from('clientes_vehiculos')
             .select(`
@@ -95,8 +123,6 @@ app.get('/api/registros/buscar', async (req, res) => {
 
         if (error) throw error;
 
-        // Limpieza y validación en Node.js para asegurar que los mantenimientos
-        // pertenezcan ÚNICAMENTE al id_cliente correspondiente
         const registrosValidos = (data || []).map(cliente => ({
             ...cliente,
             mantenimientos: (cliente.mantenimientos || []).sort((a, b) => new Date(b.fecha_actual) - new Date(a.fecha_actual))
@@ -203,7 +229,7 @@ app.delete('/api/mantenimiento/:id', async (req, res) => {
     }
 });
 
-// 8. HISTORIAL GENERAL (FILTRO CORREGIDO)
+// 8. HISTORIAL GENERAL
 app.get('/api/historial-servicios', async (req, res) => {
     try {
         const { id_taller, patente, fechaInicio, fechaFin } = req.query;
@@ -253,4 +279,5 @@ app.get('/api/historial-servicios', async (req, res) => {
         res.status(500).json({ success: false, message: 'Error del servidor al obtener historial.' });
     }
 });
+
 app.listen(port, () => console.log(`Servidor de AppMecanico corriendo en puerto ${port}`));
