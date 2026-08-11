@@ -57,6 +57,9 @@
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="nuevo-tab" data-bs-toggle="tab" data-bs-target="#nuevo" type="button" role="tab">📝 Registrar Servicio</button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-btn" onclick="mostrarSeccion('historial')">🔍 Historial de Servicios</button>
+            </li>  
         </ul>
 
         <div class="tab-content">
@@ -167,7 +170,53 @@
         </div>
     </div>
 </div>
+<section id="seccion-historial" class="seccion-app" style="display: none;">
+    <h2>📋 Historial de Servicios Realizados</h2>
+    
+    <div class="card-filtro" style="background: #f4f6f8; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+        <form id="form-filtro-historial" onsubmit="buscarHistorial(event)" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;">
+            <div>
+                <label for="filtro-patente"><strong>Patente:</strong></label><br>
+                <input type="text" id="filtro-patente" placeholder="Ej: ABC123" style="text-transform: uppercase; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+            </div>
+            <div>
+                <label for="filtro-fecha-inicio"><strong>Desde:</strong></label><br>
+                <input type="date" id="filtro-fecha-inicio" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+            </div>
+            <div>
+                <label for="filtro-fecha-fin"><strong>Hasta:</strong></label><br>
+                <input type="date" id="filtro-fecha-fin" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+            </div>
+            <div>
+                <button type="submit" style="padding: 9px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">🔍 Buscar</button>
+                <button type="button" onclick="limpiarFiltrosHistorial()" style="padding: 9px 15px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Limpiar</button>
+            </div>
+        </form>
+    </div>
 
+    <div style="overflow-x: auto;">
+        <table border="1" style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead style="background-color: #343a40; color: white;">
+                <tr>
+                    <th style="padding: 10px;">Fecha</th>
+                    <th style="padding: 10px;">Cliente</th>
+                    <th style="padding: 10px;">Teléfono</th>
+                    <th style="padding: 10px;">Patente</th>
+                    <th style="padding: 10px;">Km</th>
+                    <th style="padding: 10px;">Mantenimiento Realizado</th>
+                    <th style="padding: 10px;">Próximo Mantenimiento</th>
+                </tr>
+            </thead>
+            <tbody id="tabla-historial-body">
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 15px;">Ingresa un filtro o presiona "Buscar" para cargar los registros.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+    
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
@@ -369,7 +418,62 @@
             }
         } catch (e) { contenedor.innerHTML = "<div class='alert alert-danger mt-2'>Error al conectar con el servidor.</div>"; }
     }
+// Función para buscar en el historial con filtros
+async function buscarHistorial(event) {
+    if (event) event.preventDefault();
 
+    const patente = document.getElementById('filtro-patente').value;
+    const fechaInicio = document.getElementById('filtro-fecha-inicio').value;
+    const fechaFin = document.getElementById('filtro-fecha-fin').value;
+
+    const queryParams = new URLSearchParams({
+        patente: patente,
+        fechaInicio: fechaInicio,
+        fechaFin: fechaFin
+    });
+
+    const tbody = document.getElementById('tabla-historial-body');
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:15px;">Cargando registros...</td></tr>';
+
+    try {
+        const response = await fetch(`/api/historial-servicios?${queryParams.toString()}`);
+        const resultado = await response.json();
+
+        if (resultado.success) {
+            tbody.innerHTML = '';
+
+            if (resultado.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:15px;">No se encontraron registros para los criterios de búsqueda.</td></tr>';
+                return;
+            }
+
+            resultado.data.forEach(item => {
+                const fila = document.createElement('tr');
+                fila.innerHTML = `
+                    <td style="padding: 8px;">${item.fecha || '-'}</td>
+                    <td style="padding: 8px;">${item.cliente || '-'}</td>
+                    <td style="padding: 8px;">${item.telefono || '-'}</td>
+                    <td style="padding: 8px;"><strong>${item.patente || '-'}</strong></td>
+                    <td style="padding: 8px;">${item.kilometraje ? item.kilometraje + ' km' : '-'}</td>
+                    <td style="padding: 8px;">${item.mantenimiento || '-'}</td>
+                    <td style="padding: 8px;">${item.proximo_mantenimiento || '-'}</td>
+                `;
+                tbody.appendChild(fila);
+            });
+        } else {
+            alert('Error al consultar el historial: ' + resultado.message);
+        }
+    } catch (error) {
+        console.error('Error al realizar la consulta:', error);
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:red; padding:15px;">Ocurrió un error al cargar el historial.</td></tr>';
+    }
+}
+
+// Limpiar filtros y volver a cargar
+function limpiarFiltrosHistorial() {
+    document.getElementById('form-filtro-historial').reset();
+    buscarHistorial();
+}
     async function eliminarRegistro(idServicio) {
         if(!confirm('¿Estás seguro de que deseas ELIMINAR este registro para siempre?')) return;
         try {
