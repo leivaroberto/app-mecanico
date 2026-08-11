@@ -30,7 +30,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// 2. GUARDAR MANTENIMIENTO (CON MARCA Y MODELO)
+// 2. GUARDAR MANTENIMIENTO
 app.post('/api/guardar-mantenimiento', async (req, res) => {
     const datos = req.body;
     try {
@@ -76,10 +76,11 @@ app.post('/api/guardar-mantenimiento', async (req, res) => {
     }
 });
 
-// 3. BUSCAR POR PATENTE
+// 3. BUSCAR POR PATENTE O POR NOMBRE DE CLIENTE 👈 (ACTUALIZADO)
 app.get('/api/registros/buscar', async (req, res) => {
-    const { patente, id_taller } = req.query;
+    const { termino, id_taller } = req.query;
     try {
+        const busqueda = (termino || '').trim();
         const { data, error } = await supabase
             .from('clientes_vehiculos')
             .select(`
@@ -87,7 +88,7 @@ app.get('/api/registros/buscar', async (req, res) => {
                 mantenimientos ( id_servicio, fecha_actual, kilometraje, trabajo_realizado, trabajo_proximo, fecha_proximo, costo, aviso_enviado )
             `)
             .eq('id_taller', id_taller)
-            .ilike('patente', `%${patente.trim()}%`);
+            .or(`patente.ilike.%${busqueda}%,nombre_completo.ilike.%${busqueda}%`);
 
         if (error) throw error;
         res.json({ exito: true, registros: data });
@@ -208,7 +209,7 @@ app.get('/api/historial-servicios', async (req, res) => {
         }
 
         if (patente && patente.trim() !== '') {
-            query = query.ilike('clientes_vehiculos.patente', `%${patente.trim()}%`);
+            query = query.or(`patente.ilike.%${patente.trim()}%,nombre_completo.ilike.%${patente.trim()}%`, { foreignTable: 'clientes_vehiculos' });
         }
 
         if (fechaInicio) {
