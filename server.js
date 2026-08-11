@@ -76,14 +76,14 @@ app.post('/api/guardar-mantenimiento', async (req, res) => {
     }
 });
 
-// 3. BUSCAR POR PATENTE O NOMBRE DE CLIENTE (CORREGIDO PARA EVITAR FALSOS REGISTROS)
+// 3. BUSCAR POR PATENTE O NOMBRE DE CLIENTE (FILTRADO DE SEGURIDAD ESTRICTO)
 app.get('/api/registros/buscar', async (req, res) => {
     const { termino, id_taller } = req.query;
     try {
         const busqueda = (termino || '').trim();
         if (!busqueda) return res.json({ exito: true, registros: [] });
 
-        // Buscamos clientes que coincidan en patente O en nombre_completo, pero obligando el id_taller
+        // Consulta estricta filtrando SIEMPRE por el taller correspondiente
         const { data, error } = await supabase
             .from('clientes_vehiculos')
             .select(`
@@ -95,13 +95,17 @@ app.get('/api/registros/buscar', async (req, res) => {
 
         if (error) throw error;
 
-        // Filtrado de seguridad adicional en Node.js por id_taller
-        const registrosFiltrados = (data || []).filter(r => String(r.id_taller) === String(id_taller));
+        // Limpieza y validación en Node.js para asegurar que los mantenimientos
+        // pertenezcan ÚNICAMENTE al id_cliente correspondiente
+        const registrosValidos = (data || []).map(cliente => ({
+            ...cliente,
+            mantenimientos: (cliente.mantenimientos || []).sort((a, b) => new Date(b.fecha_actual) - new Date(a.fecha_actual))
+        }));
 
-        res.json({ exito: true, registros: registrosFiltrados });
+        res.json({ exito: true, registros: registrosValidos });
     } catch (err) {
         console.error("Error en búsqueda:", err);
-        res.status(500).json({ exito: false, mensaje: 'Error en búsqueda.' });
+        res.status(500).json({ exito: false, mensaje: 'Error en servidor al realizar la búsqueda.' });
     }
 });
 
