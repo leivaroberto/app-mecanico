@@ -30,7 +30,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// 2. GUARDAR MANTENIMIENTO
+// 2. GUARDAR MANTENIMIENTO (CON MARCA Y MODELO)
 app.post('/api/guardar-mantenimiento', async (req, res) => {
     const datos = req.body;
     try {
@@ -40,7 +40,9 @@ app.post('/api/guardar-mantenimiento', async (req, res) => {
                 id_taller: datos.id_taller || 1,
                 nombre_completo: datos.nombre,
                 telefono: datos.telefono,
-                patente: datos.patente.toUpperCase().trim()
+                patente: datos.patente.toUpperCase().trim(),
+                marca: datos.marca || '',
+                modelo: datos.modelo || ''
             }).select();
 
         if (errorCliente || !clienteData) return res.status(400).json({ exito: false, mensaje: 'Error al registrar cliente' });
@@ -81,7 +83,7 @@ app.get('/api/registros/buscar', async (req, res) => {
         const { data, error } = await supabase
             .from('clientes_vehiculos')
             .select(`
-                id_cliente, nombre_completo, telefono, patente,
+                id_cliente, nombre_completo, telefono, patente, marca, modelo,
                 mantenimientos ( id_servicio, fecha_actual, kilometraje, trabajo_realizado, trabajo_proximo, fecha_proximo, costo, aviso_enviado )
             `)
             .eq('id_taller', id_taller)
@@ -106,7 +108,7 @@ app.get('/avisos-semana', async (req, res) => {
 
         let query = supabase.from('mantenimientos').select(`
                 id_servicio, fecha_proximo, trabajo_realizado, trabajo_proximo,
-                clientes_vehiculos!inner ( id_taller, nombre_completo, telefono, patente )
+                clientes_vehiculos!inner ( id_taller, nombre_completo, telefono, patente, marca, modelo )
             `)
             .not('fecha_proximo', 'is', null)
             .or('aviso_enviado.is.null,aviso_enviado.eq.false')
@@ -124,7 +126,11 @@ app.get('/avisos-semana', async (req, res) => {
             fecha_proximo: item.fecha_proximo,
             mantenimiento_realizado: item.trabajo_proximo && item.trabajo_proximo.trim() !== '' ? item.trabajo_proximo : item.trabajo_realizado,
             clientes: { nombre: item.clientes_vehiculos?.nombre_completo, telefono: item.clientes_vehiculos?.telefono },
-            vehiculos: { patente: item.clientes_vehiculos?.patente }
+            vehiculos: { 
+                patente: item.clientes_vehiculos?.patente,
+                marca: item.clientes_vehiculos?.marca,
+                modelo: item.clientes_vehiculos?.modelo
+            }
         }));
         res.json(avisosNormalizados);
     } catch (err) {
@@ -184,7 +190,7 @@ app.delete('/api/mantenimiento/:id', async (req, res) => {
     }
 });
 
-// 8. HISTORIAL GENERAL (CORREGIDO CON JOINS Y NOMBRES DE COLUMNAS REALES)
+// 8. HISTORIAL GENERAL
 app.get('/api/historial-servicios', async (req, res) => {
     try {
         const { id_taller, patente, fechaInicio, fechaFin } = req.query;
@@ -193,7 +199,7 @@ app.get('/api/historial-servicios', async (req, res) => {
             .from('mantenimientos')
             .select(`
                 id_servicio, fecha_actual, kilometraje, trabajo_realizado, trabajo_proximo, fecha_proximo, costo,
-                clientes_vehiculos!inner ( id_taller, nombre_completo, telefono, patente )
+                clientes_vehiculos!inner ( id_taller, nombre_completo, telefono, patente, marca, modelo )
             `)
             .order('fecha_actual', { ascending: false });
 
@@ -216,13 +222,13 @@ app.get('/api/historial-servicios', async (req, res) => {
 
         if (error) throw error;
 
-        // Formatear respuesta para el frontend
         const historialFormateado = (data || []).map(item => ({
             id: item.id_servicio,
             fecha: item.fecha_actual,
             cliente: item.clientes_vehiculos?.nombre_completo,
             telefono: item.clientes_vehiculos?.telefono,
             patente: item.clientes_vehiculos?.patente,
+            vehiculo: `${item.clientes_vehiculos?.marca || ''} ${item.clientes_vehiculos?.modelo || ''}`.trim() || 'No especificado',
             kilometraje: item.kilometraje,
             trabajo: item.trabajo_realizado,
             trabajo_proximo: item.trabajo_proximo,
