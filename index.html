@@ -145,8 +145,8 @@
                                 <input type="date" class="form-control" id="fecha_servicio" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Fecha Próximo Mantenimiento</label>
-                                <input type="date" class="form-control" id="fecha_proximo" required>
+                                <label class="form-label">Fecha Próximo Mantenimiento <small class="text-muted">(Opcional)</small></label>
+                                <input type="date" class="form-control" id="fecha_proximo">
                             </div>
                         </div>
                         <div class="mb-3">
@@ -154,7 +154,7 @@
                             <textarea class="form-control" id="trabajo" rows="3" placeholder="Ej: Cambio de aceite, filtro y bujías" required></textarea>
                         </div>
                         <div class="mb-4">
-                            <label class="form-label text-primary font-weight-bold">Trabajo a realizar en la próxima visita (Sugerido)</label>
+                            <label class="form-label text-primary font-weight-bold">Trabajo a realizar en la próxima visita <small class="text-muted">(Opcional)</small></label>
                             <textarea class="form-control border-primary" id="trabajo_proximo" rows="2" placeholder="Ej: Revisión y cambio de pastillas de freno delanteras"></textarea>
                         </div>
                         <div class="d-grid">
@@ -247,12 +247,12 @@
                 const tel = i.clientes?.telefono || '';
                 const pat = i.vehiculos?.patente || 'N/A';
                 const servicio = i.mantenimiento_realizado || 'Mantenimiento preventivo';
+                const fechaProxima = i.fecha_proximo || 'No agendado';
                 
-                // Mensaje de WhatsApp corregido con el trabajo próximo
-                const mje = encodeURIComponent(`Hola ${nombre}, te recordamos desde el Taller que tu vehículo (${pat}) tiene programado su próximo servicio (${servicio}) para la fecha ${i.fecha_proximo}. ¡Escríbenos para agendar tu turno!`);
+                const mje = encodeURIComponent(`Hola ${nombre}, te recordamos desde el Taller que tu vehículo (${pat}) tiene programado su próximo servicio (${servicio}) para la fecha ${fechaProxima}. ¡Escríbenos para agendar tu turno!`);
                 
                 return `<tr>
-                    <td><span class="badge bg-danger">${i.fecha_proximo}</span></td>
+                    <td><span class="badge bg-danger">${fechaProxima}</span></td>
                     <td><strong>${nombre}</strong></td>
                     <td><span class="badge bg-secondary">${pat}</span></td>
                     <td><strong class="text-primary">${servicio}</strong></td>
@@ -327,7 +327,7 @@
                                         📅 <strong>Fecha:</strong> ${m.fecha_actual || '-'} | 🚗 <strong>Km:</strong> ${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'} | 💰 <strong>Costo:</strong> $${m.costo ? Number(m.costo).toLocaleString() : '0'}<br>
                                         🔧 <strong>Trabajo Realizado:</strong> ${m.trabajo_realizado || '-'}<br>
                                         🎯 <strong class='text-primary'>Próxima Visita (A Realizar):</strong> ${m.trabajo_proximo || 'No especificado'}<br>
-                                        🔔 <strong class='text-danger'>Fecha Próxima:</strong> ${m.fecha_proximo || '-'}
+                                        🔔 <strong class='text-danger'>Fecha Próxima:</strong> ${m.fecha_proximo || 'Sin agendar'}
                                     </div>
                                     <button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro(${m.id_servicio})">🗑️ Eliminar</button>
                                 </div>
@@ -481,9 +481,9 @@
             kilometraje: document.getElementById('kilometraje').value,
             costo: document.getElementById('costo').value,
             fecha_servicio: document.getElementById('fecha_servicio').value,
-            fecha_proximo: document.getElementById('fecha_proximo').value,
+            fecha_proximo: document.getElementById('fecha_proximo').value || '',
             trabajo: document.getElementById('trabajo').value,
-            trabajo_proximo: document.getElementById('trabajo_proximo').value
+            trabajo_proximo: document.getElementById('trabajo_proximo').value || ''
         };
 
         try {
@@ -493,7 +493,7 @@
             const data = await res.json();
             if (data.exito) {
                 alert('¡Mantenimiento guardado con éxito!');
-                if (confirm('¿Deseas abrir WhatsApp para enviarle el recordatorio al cliente?')) {
+                if (datos.fecha_proximo && confirm('¿Deseas abrir WhatsApp para enviarle el recordatorio al cliente?')) {
                     let detalleProximo = datos.trabajo_proximo ? ` (${datos.trabajo_proximo})` : '';
                     let mensaje = `¡Hola ${datos.nombre}! Te escribimos del taller para recordarte que tu vehículo (${datos.patente}) se acerca a su próximo servicio${detalleProximo} el ${datos.fecha_proximo}.`;
                     window.open(`https://api.whatsapp.com/send?phone=${encodeURIComponent(datos.telefono)}&text=${encodeURIComponent(mensaje)}`, '_blank');
@@ -510,7 +510,5 @@
 
     document.getElementById('btnCerrarSesion').addEventListener('click', () => location.reload());
 </script>
-</body>
-</html>
 </body>
 </html>
