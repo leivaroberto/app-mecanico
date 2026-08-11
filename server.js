@@ -61,7 +61,7 @@ app.post('/api/guardar-mantenimiento', async (req, res) => {
                 trabajo_proximo: datos.trabajo_proximo || null,
                 fecha_proximo: fechaProximoFinal,
                 costo: Number(datos.costo) || 0,
-                aviso_enviado: false // 👈 Novedad: inicia no enviado
+                aviso_enviado: false
             });
 
         if (errorMantenimiento) {
@@ -94,7 +94,7 @@ app.get('/api/registros/buscar', async (req, res) => {
     }
 });
 
-// 4. AVISOS DE LA SEMANA (Solo trae los que NO se han enviado aún)
+// 4. AVISOS DE LA SEMANA
 app.get('/avisos-semana', async (req, res) => {
     const { id_taller } = req.query;
     try {
@@ -109,7 +109,7 @@ app.get('/avisos-semana', async (req, res) => {
                 clientes_vehiculos!inner ( id_taller, nombre_completo, telefono, patente )
             `)
             .not('fecha_proximo', 'is', null)
-            .or('aviso_enviado.is.null,aviso_enviado.eq.false') // 👈 Solo trae los no enviados
+            .or('aviso_enviado.is.null,aviso_enviado.eq.false')
             .gte('fecha_proximo', hoyStr)
             .lte('fecha_proximo', proximoEn7DiasStr)
             .order('fecha_proximo', { ascending: true });
@@ -183,37 +183,58 @@ app.delete('/api/mantenimiento/:id', async (req, res) => {
         res.status(500).json({ exito: false, mensaje: 'Error al eliminar.' });
     }
 });
-// Endpoint para buscar historial por patente o por rango de fechas
+
+// 8. HISTORIAL GENERAL (CORREGIDO CON JOINS Y NOMBRES DE COLUMNAS REALES)
 app.get('/api/historial-servicios', async (req, res) => {
     try {
-        const { patente, fechaInicio, fechaFin } = req.query;
+        const { id_taller, patente, fechaInicio, fechaFin } = req.query;
 
         let query = supabase
             .from('mantenimientos')
-            .select('*')
-            .order('fecha', { ascending: false });
+            .select(`
+                id_servicio, fecha_actual, kilometraje, trabajo_realizado, trabajo_proximo, fecha_proximo, costo,
+                clientes_vehiculos!inner ( id_taller, nombre_completo, telefono, patente )
+            `)
+            .order('fecha_actual', { ascending: false });
 
-        // Filtrar por patente si se ingresó alguna
-        if (patente && patente.trim() !== '') {
-            query = query.ilike('patente', `%${patente.trim()}%`);
+        if (id_taller) {
+            query = query.eq('clientes_vehiculos.id_taller', id_taller);
         }
 
-        // Filtrar por rango de fechas si se seleccionaron
+        if (patente && patente.trim() !== '') {
+            query = query.ilike('clientes_vehiculos.patente', `%${patente.trim()}%`);
+        }
+
         if (fechaInicio) {
-            query = query.gte('fecha', fechaInicio);
+            query = query.gte('fecha_actual', fechaInicio);
         }
         if (fechaFin) {
-            query = query.lte('fecha', fechaFin);
+            query = query.lte('fecha_actual', fechaFin);
         }
 
         const { data, error } = await query;
 
         if (error) throw error;
 
-        res.json({ success: true, data });
+        // Formatear respuesta para el frontend
+        const historialFormateado = (data || []).map(item => ({
+            id: item.id_servicio,
+            fecha: item.fecha_actual,
+            cliente: item.clientes_vehiculos?.nombre_completo,
+            telefono: item.clientes_vehiculos?.telefono,
+            patente: item.clientes_vehiculos?.patente,
+            kilometraje: item.kilometraje,
+            trabajo: item.trabajo_realizado,
+            trabajo_proximo: item.trabajo_proximo,
+            fecha_proximo: item.fecha_proximo,
+            costo: item.costo
+        }));
+
+        res.json({ success: true, data: historialFormateado });
     } catch (error) {
         console.error('Error al obtener el historial:', error);
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({ success: false, message: 'Error del servidor al obtener historial.' });
     }
 });
+
 app.listen(port, () => console.log(`Servidor de AppMecanico corriendo en puerto ${port}`));
