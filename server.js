@@ -30,7 +30,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// 2. GUARDAR MANTENIMIENTO (CON CONTROL DE NULL EN FECHAS VACÍAS)
+// 2. GUARDAR MANTENIMIENTO
 app.post('/api/guardar-mantenimiento', async (req, res) => {
     const datos = req.body;
     try {
@@ -47,7 +47,6 @@ app.post('/api/guardar-mantenimiento', async (req, res) => {
 
         const id_cliente = clienteData[0].id_cliente;
 
-        // Si fecha_proximo viene vacía (""), la convertimos a NULL para que PostgreSQL no falle
         const fechaProximoFinal = (datos.fecha_proximo && datos.fecha_proximo.trim() !== '') 
             ? datos.fecha_proximo 
             : null;
@@ -60,18 +59,17 @@ app.post('/api/guardar-mantenimiento', async (req, res) => {
                 kilometraje: Number(datos.kilometraje),
                 trabajo_realizado: datos.trabajo,
                 trabajo_proximo: datos.trabajo_proximo || null,
-                fecha_proximo: fechaProximoFinal, // 👈 Se envía NULL si está vacía
-                costo: Number(datos.costo) || 0
+                fecha_proximo: fechaProximoFinal,
+                costo: Number(datos.costo) || 0,
+                aviso_enviado: false // 👈 Novedad: inicia no enviado
             });
 
         if (errorMantenimiento) {
-            console.error("Error Supabase Mantenimiento:", errorMantenimiento);
             return res.status(400).json({ exito: false, mensaje: 'Error al registrar mantenimiento: ' + errorMantenimiento.message });
         }
         
         res.json({ exito: true, mensaje: '¡Guardado con éxito!' });
     } catch (err) {
-        console.error("Error servidor:", err);
         res.status(500).json({ exito: false, mensaje: 'Error del servidor.' });
     }
 });
@@ -84,7 +82,7 @@ app.get('/api/registros/buscar', async (req, res) => {
             .from('clientes_vehiculos')
             .select(`
                 id_cliente, nombre_completo, telefono, patente,
-                mantenimientos ( id_servicio, fecha_actual, kilometraje, trabajo_realizado, trabajo_proximo, fecha_proximo, costo )
+                mantenimientos ( id_servicio, fecha_actual, kilometraje, trabajo_realizado, trabajo_proximo, fecha_proximo, costo, aviso_enviado )
             `)
             .eq('id_taller', id_taller)
             .ilike('patente', `%${patente.trim()}%`);
@@ -96,7 +94,7 @@ app.get('/api/registros/buscar', async (req, res) => {
     }
 });
 
-// 4. AVISOS DE LA SEMANA
+// 4. AVISOS DE LA SEMANA (Solo trae los que NO se han enviado aún)
 app.get('/avisos-semana', async (req, res) => {
     const { id_taller } = req.query;
     try {
@@ -110,7 +108,8 @@ app.get('/avisos-semana', async (req, res) => {
                 id_servicio, fecha_proximo, trabajo_realizado, trabajo_proximo,
                 clientes_vehiculos!inner ( id_taller, nombre_completo, telefono, patente )
             `)
-            .not('fecha_proximo', 'is', null) // 👈 Ignora los que son NULL
+            .not('fecha_proximo', 'is', null)
+            .or('aviso_enviado.is.null,aviso_enviado.eq.false') // 👈 Solo trae los no enviados
             .gte('fecha_proximo', hoyStr)
             .lte('fecha_proximo', proximoEn7DiasStr)
             .order('fecha_proximo', { ascending: true });
@@ -133,7 +132,23 @@ app.get('/avisos-semana', async (req, res) => {
     }
 });
 
-// 5. ESTADÍSTICAS DEL MES
+// 5. MARCAR AVISO COMO ENVIADO
+app.post('/api/marcar-aviso-enviado', async (req, res) => {
+    const { id_servicio } = req.body;
+    try {
+        const { error } = await supabase
+            .from('mantenimientos')
+            .update({ aviso_enviado: true })
+            .eq('id_servicio', id_servicio);
+
+        if (error) throw error;
+        res.json({ exito: true });
+    } catch (err) {
+        res.status(500).json({ exito: false, mensaje: 'Error al actualizar estado.' });
+    }
+});
+
+// 6. ESTADÍSTICAS DEL MES
 app.get('/api/estadisticas', async (req, res) => {
     const { id_taller } = req.query;
     try {
@@ -157,7 +172,7 @@ app.get('/api/estadisticas', async (req, res) => {
     }
 });
 
-// 6. ELIMINAR REGISTRO
+// 7. ELIMINAR REGISTRO
 app.delete('/api/mantenimiento/:id', async (req, res) => {
     const { id } = req.params;
     try {
