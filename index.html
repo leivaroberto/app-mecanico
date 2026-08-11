@@ -110,4 +110,536 @@
                         <input type="text" id="buscarPatente" class="form-control text-uppercase" placeholder="Ingrese Patente (ej: AA123CD)">
                         <button class="btn btn-primary" onclick="buscarPorPatente()">Buscar</button>
                     </div>
-                    <div id
+                    <div id="resultadoBusqueda" class="mt-4"></div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="nuevo" role="tabpanel">
+                <div class="card p-4">
+                    <h4 class="mb-4 text-center">Registrar Nuevo Mantenimiento</h4>
+                    <form id="mantenimientoForm">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Nombre del Cliente</label>
+                                <input type="text" class="form-control" id="nombre" placeholder="Ej: Juan Pérez" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Teléfono (WhatsApp)</label>
+                                <input type="tel" class="form-control" id="telefono" placeholder="Ej: +5491122334455" required>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Patente / Dominio</label>
+                                <input type="text" class="form-control text-uppercase" id="patente" placeholder="AB123CD" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Kilometraje Actual</label>
+                                <input type="number" class="form-control" id="kilometraje" placeholder="Ej: 85000" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Costo Total ($)</label>
+                                <input type="number" class="form-control bg-light text-success fw-bold" id="costo" placeholder="Ej: 45000" required>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha del Servicio</label>
+                                <input type="date" class="form-control" id="fecha_servicio" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha Próximo Mantenimiento <small class="text-muted">(Opcional)</small></label>
+                                <input type="date" class="form-control" id="fecha_proximo">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Trabajo Realizado</label>
+                            <textarea class="form-control" id="trabajo" rows="3" placeholder="Ej: Cambio de aceite, filtro y bujías" required></textarea>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label text-primary font-weight-bold">Trabajo a realizar en la próxima visita <small class="text-muted">(Opcional)</small></label>
+                            <textarea class="form-control border-primary" id="trabajo_proximo" rows="2" placeholder="Ej: Revisión y cambio de pastillas de freno delanteras"></textarea>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success btn-lg">Guardar Mantenimiento</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="historial" role="tabpanel">
+                <div class="card p-4">
+                    <h4 class="mb-3">📋 Historial General de Servicios Realizados</h4>
+                    
+                    <div class="card p-3 bg-light mb-4 border-0">
+                        <form id="form-filtro-historial" onsubmit="buscarHistorial(event)" class="row g-3 align-items-end">
+                            <div class="col-md-3">
+                                <label for="filtro-patente" class="form-label fw-bold">Patente:</label>
+                                <input type="text" id="filtro-patente" class="form-control text-uppercase" placeholder="Ej: ABC123">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="filtro-fecha-inicio" class="form-label fw-bold">Desde:</label>
+                                <input type="date" id="filtro-fecha-inicio" class="form-control">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="filtro-fecha-fin" class="form-label fw-bold">Hasta:</label>
+                                <input type="date" id="filtro-fecha-fin" class="form-control">
+                            </div>
+                            <div class="col-md-3 d-flex gap-2">
+                                <button type="submit" class="btn btn-primary w-100">🔍 Buscar</button>
+                                <button type="button" onclick="limpiarFiltrosHistorial()" class="btn btn-secondary">Limpiar</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle border">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Cliente</th>
+                                    <th>Teléfono</th>
+                                    <th>Patente</th>
+                                    <th>Km</th>
+                                    <th>Mantenimiento Realizado</th>
+                                    <th>Próximo Mantenimiento</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-historial-body">
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted p-3">Presiona "Buscar" para cargar los registros.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    const API_URL = 'https://app-mecanico.onrender.com';
+    let tallerActualId = null;
+    let nombreTallerActual = "Taller Mecánico";
+    let vehiculoActualBuscado = null;
+
+    // --- LOGICA DE LOGIN Y BIOMETRIA ---
+    window.addEventListener('DOMContentLoaded', () => {
+        if (!window.PublicKeyCredential) document.getElementById('btnBiometria').style.display = 'none';
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        await ejecutarLogin(document.getElementById('loginEmail').value, document.getElementById('loginPassword').value);
+    });
+
+    document.getElementById('btnBiometria').addEventListener('click', async () => {
+        const e = localStorage.getItem('taller_email_biometrico');
+        const p = localStorage.getItem('taller_pass_biometrico');
+        if (!e || !p) return alert('Primero ingresa una vez con correo y clave para vincular tu huella.');
+        await ejecutarLogin(e, p);
+    });
+
+    async function ejecutarLogin(email, password) {
+        const btn = document.getElementById('btnIngresar');
+        btn.disabled = true; btn.innerText = "Verificando...";
+        try {
+            const res = await fetch(`${API_URL}/api/login`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            if (data.exito) {
+                tallerActualId = data.id_taller;
+                nombreTallerActual = data.nombre_taller || "Taller Mecánico";
+                localStorage.setItem('taller_email_biometrico', email);
+                localStorage.setItem('taller_pass_biometrico', password);
+                
+                document.getElementById('tituloTaller').innerText = "🔧 " + nombreTallerActual;
+                document.getElementById('seccionLogin').classList.add('oculto');
+                document.getElementById('seccionApp').classList.remove('oculto');
+
+                cargarAvisosSemana();
+                cargarEstadisticas();
+            } else alert(data.mensaje || 'Credenciales incorrectas');
+        } catch (error) {
+            alert('Error de conexión con el servidor.');
+        } finally {
+            btn.disabled = false; btn.innerText = "Ingresar con Clave";
+        }
+    }
+
+    // --- DASHBOARD Y ESTADÍSTICAS ---
+    async function cargarEstadisticas() {
+        try {
+            const res = await fetch(`${API_URL}/api/estadisticas?id_taller=${tallerActualId}`);
+            const data = await res.json();
+            if(data.exito){
+                document.getElementById('statVehiculos').innerText = data.totalVehiculos;
+                document.getElementById('statIngresos').innerText = `$ ${data.ingresosMes.toLocaleString()}`;
+            }
+        } catch(e) { console.error("Error al cargar estadísticas:", e); }
+    }
+
+    async function cargarAvisosSemana() {
+        const tbody = document.getElementById('tablaAvisosBody');
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Cargando avisos...</td></tr>';
+        try {
+            const res = await fetch(`${API_URL}/avisos-semana?id_taller=${tallerActualId}`);
+            const avisos = await res.json();
+            if (!avisos || !avisos.length) return tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success">¡Sin vencimientos pendientes! 🎉</td></tr>';
+            
+            tbody.innerHTML = avisos.map(i => {
+                const nombre = i.clientes?.nombre || 'Sin nombre';
+                const tel = i.clientes?.telefono || '';
+                const pat = i.vehiculos?.patente || 'N/A';
+                const servicio = i.mantenimiento_realizado || 'Mantenimiento preventivo';
+                const fechaProxima = i.fecha_proximo || 'No agendado';
+                
+                const mje = encodeURIComponent(`Hola ${nombre}, te recordamos desde el Taller que tu vehículo (${pat}) tiene programado su próximo servicio (${servicio}) para la fecha ${fechaProxima}. ¡Escríbenos para agendar tu turno!`);
+                
+                return `<tr id="fila-aviso-${i.id}">
+                    <td><span class="badge bg-danger">${fechaProxima}</span></td>
+                    <td><strong>${nombre}</strong></td>
+                    <td><span class="badge bg-secondary">${pat}</span></td>
+                    <td><strong class="text-primary">${servicio}</strong></td>
+                    <td>${tel ? `<button onclick="enviarWhatsAppYMarcar(${i.id}, '${tel.replace(/\D/g, '')}', '${mje}')" class="btn btn-sm btn-success">📲 Enviar WA</button>` : '<span class="text-muted">Sin teléfono</span>'}</td>
+                </tr>`;
+            }).join('');
+        } catch (e) { tbody.innerHTML = '<tr><td colspan="5" class="text-danger text-center">Error al consultar avisos.</td></tr>'; }
+    }
+
+    async function enviarWhatsAppYMarcar(idServicio, telefono, mensaje) {
+        window.open(`https://wa.me/${telefono}?text=${mensaje}`, '_blank');
+        try {
+            await fetch(`${API_URL}/api/marcar-aviso-enviado`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_servicio: idServicio })
+            });
+            
+            const fila = document.getElementById(`fila-aviso-${idServicio}`);
+            if(fila) fila.remove();
+
+            const tbody = document.getElementById('tablaAvisosBody');
+            if(tbody.children.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success">¡Sin vencimientos pendientes! 🎉</td></tr>';
+            }
+        } catch(e) {
+            console.error("Error al marcar aviso:", e);
+        }
+    }
+
+    // --- BUSQUEDA, LIMPIAR Y ELIMINAR ---
+    function limpiarBusqueda() {
+        document.getElementById('buscarPatente').value = '';
+        document.getElementById('resultadoBusqueda').innerHTML = '';
+        vehiculoActualBuscado = null;
+    }
+
+    async function buscarPorPatente() {
+        const patente = document.getElementById('buscarPatente').value.trim();
+        const contenedor = document.getElementById('resultadoBusqueda');
+        if (!patente) return alert("Ingrese una patente para buscar.");
+        contenedor.innerHTML = "<p class='text-muted'>Buscando en la base de datos...</p>";
+
+        try {
+            const res = await fetch(`${API_URL}/api/registros/buscar?patente=${patente}&id_taller=${tallerActualId}`);
+            const data = await res.json();
+            if (data.exito && data.registros.length > 0) {
+                let unificados = [];
+                data.registros.forEach(r => {
+                    if (r.mantenimientos && r.mantenimientos.length > 0) {
+                        r.mantenimientos.forEach(m => {
+                            m.nombre_cliente = r.nombre_completo;
+                            m.telefono_cliente = r.telefono;
+                            unificados.push(m);
+                        });
+                    }
+                });
+
+                unificados.sort((a, b) => new Date(b.fecha_actual) - new Date(a.fecha_actual));
+
+                let clienteInfo = data.registros[data.registros.length - 1];
+                
+                vehiculoActualBuscado = {
+                    patente: clienteInfo.patente,
+                    nombre_completo: clienteInfo.nombre_completo,
+                    telefono: clienteInfo.telefono,
+                    todosMantenimientos: unificados
+                };
+
+                let html = `
+                    <div class='card p-3 border-secondary mb-3'>
+                        <div class='d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2'>
+                            <div>
+                                <h5 class='mb-1'><strong>Titular Actual:</strong> ${clienteInfo.nombre_completo}</h5>
+                                <p class='mb-0 text-muted'>📱 <strong>Teléfono:</strong> ${clienteInfo.telefono} | 🚗 <strong>Patente:</strong> <span class='badge bg-dark fs-6'>${clienteInfo.patente}</span></p>
+                            </div>
+                            <div class='d-flex gap-2'>
+                                <button class='btn btn-success btn-sm' onclick='imprimirHistorialCompleto()'>📋 Imprimir Historial Completo (${unificados.length})</button>
+                                <button class='btn btn-outline-dark btn-sm' onclick='imprimirUltimoServicio()'>📄 Imprimir Último Servicio</button>
+                            </div>
+                        </div>
+
+                        <h6 class='border-bottom pb-2 mt-2'><strong>Historial de Intervenciones:</strong></h6>
+                        <ul class='list-group list-group-flush'>`;
+
+                if (unificados.length > 0) {
+                    unificados.forEach(m => {
+                        html += `
+                            <li class='list-group-item px-0'>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        👤 <strong>Cliente en este servicio:</strong> ${m.nombre_cliente} (${m.telefono_cliente})<br>
+                                        📅 <strong>Fecha:</strong> ${m.fecha_actual || '-'} | 🚗 <strong>Km:</strong> ${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'} | 💰 <strong>Costo:</strong> $${m.costo ? Number(m.costo).toLocaleString() : '0'}<br>
+                                        🔧 <strong>Trabajo Realizado:</strong> ${m.trabajo_realizado || '-'}<br>
+                                        🎯 <strong class='text-primary'>Próxima Visita (A Realizar):</strong> ${m.trabajo_proximo || 'No especificado'}<br>
+                                        🔔 <strong class='text-danger'>Fecha Próxima:</strong> ${m.fecha_proximo || 'Sin agendar'} ${m.aviso_enviado ? '✅ (Aviso enviado)' : ''}
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro(${m.id_servicio})">🗑️ Eliminar</button>
+                                </div>
+                            </li>`;
+                    });
+                } else {
+                    html += `<li class='list-group-item text-muted'>No hay mantenimientos registrados para este vehículo.</li>`;
+                }
+
+                contenedor.innerHTML = html + "</ul></div>";
+            } else {
+                contenedor.innerHTML = "<div class='alert alert-warning mt-2'>No se encontraron registros para esa patente.</div>";
+            }
+        } catch (e) { contenedor.innerHTML = "<div class='alert alert-danger mt-2'>Error al conectar con el servidor.</div>"; }
+    }
+
+    // --- SOLAPA: BUSCAR HISTORIAL GENERAL POR FILTROS ---
+    async function buscarHistorial(event) {
+        if (event) event.preventDefault();
+
+        const patente = document.getElementById('filtro-patente').value.trim();
+        const fechaInicio = document.getElementById('filtro-fecha-inicio').value;
+        const fechaFin = document.getElementById('filtro-fecha-fin').value;
+
+        const queryParams = new URLSearchParams({
+            id_taller: tallerActualId,
+            patente: patente,
+            fechaInicio: fechaInicio,
+            fechaFin: fechaFin
+        });
+
+        const tbody = document.getElementById('tabla-historial-body');
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted p-3">Cargando registros...</td></tr>';
+
+        try {
+            const response = await fetch(`${API_URL}/api/historial-servicios?${queryParams.toString()}`);
+            const resultado = await response.json();
+
+            if (resultado.success) {
+                tbody.innerHTML = '';
+
+                if (!resultado.data || resultado.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted p-3">No se encontraron registros para los criterios ingresados.</td></tr>';
+                    return;
+                }
+
+                resultado.data.forEach(item => {
+                    const fila = document.createElement('tr');
+                    const proximoTxt = item.fecha_proximo ? `${item.fecha_proximo} ${item.trabajo_proximo ? '('+item.trabajo_proximo+')' : ''}` : 'Sin agendar';
+                    
+                    fila.innerHTML = `
+                        <td>${item.fecha || '-'}</td>
+                        <td><strong>${item.cliente || '-'}</strong></td>
+                        <td>${item.telefono || '-'}</td>
+                        <td><span class="badge bg-dark">${item.patente || '-'}</span></td>
+                        <td>${item.kilometraje ? item.kilometraje.toLocaleString() + ' km' : '-'}</td>
+                        <td>${item.trabajo || '-'}</td>
+                        <td><span class="${item.fecha_proximo ? 'text-danger fw-bold' : 'text-muted'}">${proximoTxt}</span></td>
+                    `;
+                    tbody.appendChild(fila);
+                });
+            } else {
+                alert('Error al consultar el historial: ' + resultado.message);
+            }
+        } catch (error) {
+            console.error('Error al realizar la consulta:', error);
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger p-3">Error de conexión al cargar el historial.</td></tr>';
+        }
+    }
+
+    function limpiarFiltrosHistorial() {
+        document.getElementById('form-filtro-historial').reset();
+        buscarHistorial();
+    }
+
+    async function eliminarRegistro(idServicio) {
+        if(!confirm('¿Estás seguro de que deseas ELIMINAR este registro para siempre?')) return;
+        try {
+            const res = await fetch(`${API_URL}/api/mantenimiento/${idServicio}`, { method: 'DELETE' });
+            const data = await res.json();
+            if(data.exito) {
+                alert('Registro eliminado.');
+                buscarPorPatente();
+                cargarEstadisticas();
+            } else alert('Error al eliminar registro');
+        } catch(e) { alert('Error de conexión.'); }
+    }
+
+    // --- IMPRESIÓN SIN COSTOS ---
+    function imprimirHistorialCompleto() {
+        if (!vehiculoActualBuscado || !vehiculoActualBuscado.todosMantenimientos || vehiculoActualBuscado.todosMantenimientos.length === 0) {
+            return alert("No hay mantenimientos para imprimir.");
+        }
+
+        let ventana = window.open('', '_blank', 'width=850,height=700');
+        let mantenimientosHTML = '';
+
+        vehiculoActualBuscado.todosMantenimientos.forEach((m, i) => {
+            mantenimientosHTML += `
+                <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; font-weight: bold;">#${vehiculoActualBuscado.todosMantenimientos.length - i}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${m.fecha_actual || '-'}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${m.nombre_cliente || '-'}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${m.trabajo_realizado || '-'}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; color: #2b6cb0;">${m.trabajo_proximo || '-'}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #c53030; font-weight: bold;">${m.fecha_proximo || '-'}</td>
+                </tr>`;
+        });
+
+        abrirVentanaImpresion(ventana, "Historial Clínico Vehicular - Completo", vehiculoActualBuscado, mantenimientosHTML);
+    }
+
+    function imprimirUltimoServicio() {
+        if (!vehiculoActualBuscado || !vehiculoActualBuscado.todosMantenimientos || vehiculoActualBuscado.todosMantenimientos.length === 0) {
+            return alert("No hay mantenimientos para imprimir.");
+        }
+
+        const ultimo = vehiculoActualBuscado.todosMantenimientos[0];
+        let ventana = window.open('', '_blank', 'width=850,height=700');
+
+        let mantenimientosHTML = `
+            <tr>
+                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; font-weight: bold;">1</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${ultimo.fecha_actual || '-'}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${ultimo.nombre_cliente || '-'}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">${ultimo.kilometraje ? ultimo.kilometraje.toLocaleString() + ' km' : '-'}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${ultimo.trabajo_realizado || '-'}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; color: #2b6cb0;">${ultimo.trabajo_proximo || '-'}</td>
+                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #c53030; font-weight: bold;">${ultimo.fecha_proximo || '-'}</td>
+            </tr>`;
+
+        abrirVentanaImpresion(ventana, "Comprobante de Último Servicio Realizado", vehiculoActualBuscado, mantenimientosHTML);
+    }
+
+    function abrirVentanaImpresion(ventana, tituloDocumento, vehiculo, mantenimientosHTML) {
+        ventana.document.write(`
+            <!DOCTYPE html>
+            <html lang="es">
+            <head>
+                <meta charset="UTF-8">
+                <title>${tituloDocumento} - ${vehiculo.patente}</title>
+                <style>
+                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; color: #2d3748; }
+                    .header { text-align: center; border-bottom: 3px solid #2b6cb0; padding-bottom: 15px; margin-bottom: 25px; }
+                    .header h2 { margin: 0; color: #2b6cb0; font-size: 24px; text-transform: uppercase; }
+                    .header h3 { margin: 5px 0 0 0; color: #4a5568; font-size: 16px; font-weight: normal; }
+                    .info-card { background: #f7fafc; border: 1px solid #e2e8f0; border-left: 5px solid #2b6cb0; padding: 15px; border-radius: 6px; margin-bottom: 25px; display: flex; justify-content: space-between; }
+                    .patente-badge { font-size: 20px; font-weight: bold; background: #2d3748; color: #fff; padding: 4px 12px; border-radius: 4px; letter-spacing: 2px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                    th { background-color: #2b6cb0; color: white; padding: 10px; text-align: left; font-size: 12px; text-transform: uppercase; }
+                    .footer { margin-top: 50px; text-align: center; font-size: 11px; color: #a0aec0; border-top: 1px solid #e2e8f0; padding-top: 15px; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h2>🔧 ${nombreTallerActual}</h2>
+                    <h3>${tituloDocumento}</h3>
+                </div>
+
+                <div class="info-card">
+                    <div>
+                        <div><strong>Titular / Contacto Actual:</strong> ${vehiculo.nombre_completo}</div>
+                        <div><strong>Teléfono / WhatsApp:</strong> ${vehiculo.telefono}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 12px; color: #718096; margin-bottom: 4px;">PATENTE</div>
+                        <span class="patente-badge">${vehiculo.patente}</span>
+                    </div>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="text-align: center; width: 35px;">#</th>
+                            <th style="text-align: center; width: 90px;">Fecha</th>
+                            <th style="width: 120px;">Cliente</th>
+                            <th style="text-align: right; width: 95px;">Kilometraje</th>
+                            <th>Trabajo Realizado</th>
+                            <th>Trabajo Próximo</th>
+                            <th style="text-align: center; width: 105px;">Fecha Próxima</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${mantenimientosHTML}
+                    </tbody>
+                </table>
+
+                <div class="footer">
+                    <p>Documento generado por AppMecanico para <strong>${nombreTallerActual}</strong> | ${new Date().toLocaleDateString('es-AR')}</p>
+                </div>
+
+                <script>
+                    window.onload = function() { window.print(); };
+                <\/script>
+            </body>
+            </html>
+        `);
+        ventana.document.close();
+    }
+
+    // --- GUARDAR NUEVO ---
+    document.getElementById('mantenimientoForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        const datos = {
+            id_taller: tallerActualId,
+            nombre: document.getElementById('nombre').value,
+            telefono: document.getElementById('telefono').value,
+            patente: document.getElementById('patente').value,
+            kilometraje: document.getElementById('kilometraje').value,
+            costo: document.getElementById('costo').value,
+            fecha_servicio: document.getElementById('fecha_servicio').value,
+            fecha_proximo: document.getElementById('fecha_proximo').value || '',
+            trabajo: document.getElementById('trabajo').value,
+            trabajo_proximo: document.getElementById('trabajo_proximo').value || ''
+        };
+
+        try {
+            const res = await fetch(`${API_URL}/api/guardar-mantenimiento`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos)
+            });
+            const data = await res.json();
+            if (data.exito) {
+                alert('¡Mantenimiento guardado con éxito!');
+                if (datos.fecha_proximo && confirm('¿Deseas abrir WhatsApp para enviarle el recordatorio al cliente?')) {
+                    let detalleProximo = datos.trabajo_proximo ? ` (${datos.trabajo_proximo})` : '';
+                    let mensaje = `¡Hola ${datos.nombre}! Te escribimos del taller para recordarte que tu vehículo (${datos.patente}) se acerca a su próximo servicio${detalleProximo} el ${datos.fecha_proximo}.`;
+                    window.open(`https://api.whatsapp.com/send?phone=${encodeURIComponent(datos.telefono)}&text=${encodeURIComponent(mensaje)}`, '_blank');
+                }
+                document.getElementById('mantenimientoForm').reset();
+                cargarAvisosSemana();
+                cargarEstadisticas();
+                
+                const triggerEl = document.querySelector('#dashboard-tab');
+                bootstrap.Tab.getOrCreateInstance(triggerEl).show();
+            } else alert('Error al guardar: ' + data.mensaje);
+        } catch (err) { alert('Error de conexión al guardar.'); }
+    });
+
+    document.getElementById('btnCerrarSesion').addEventListener('click', () => location.reload());
+</script>
+</body>
+</html>
