@@ -76,23 +76,31 @@ app.post('/api/guardar-mantenimiento', async (req, res) => {
     }
 });
 
-// 3. BUSCAR POR PATENTE O POR NOMBRE DE CLIENTE 👈 (ACTUALIZADO)
+// 3. BUSCAR POR PATENTE O NOMBRE DE CLIENTE (CORREGIDO PARA EVITAR FALSOS REGISTROS)
 app.get('/api/registros/buscar', async (req, res) => {
     const { termino, id_taller } = req.query;
     try {
         const busqueda = (termino || '').trim();
+        if (!busqueda) return res.json({ exito: true, registros: [] });
+
+        // Buscamos clientes que coincidan en patente O en nombre_completo, pero obligando el id_taller
         const { data, error } = await supabase
             .from('clientes_vehiculos')
             .select(`
-                id_cliente, nombre_completo, telefono, patente, marca, modelo,
+                id_cliente, nombre_completo, telefono, patente, marca, modelo, id_taller,
                 mantenimientos ( id_servicio, fecha_actual, kilometraje, trabajo_realizado, trabajo_proximo, fecha_proximo, costo, aviso_enviado )
             `)
             .eq('id_taller', id_taller)
             .or(`patente.ilike.%${busqueda}%,nombre_completo.ilike.%${busqueda}%`);
 
         if (error) throw error;
-        res.json({ exito: true, registros: data });
+
+        // Filtrado de seguridad adicional en Node.js por id_taller
+        const registrosFiltrados = (data || []).filter(r => String(r.id_taller) === String(id_taller));
+
+        res.json({ exito: true, registros: registrosFiltrados });
     } catch (err) {
+        console.error("Error en búsqueda:", err);
         res.status(500).json({ exito: false, mensaje: 'Error en búsqueda.' });
     }
 });
@@ -191,7 +199,7 @@ app.delete('/api/mantenimiento/:id', async (req, res) => {
     }
 });
 
-// 8. HISTORIAL GENERAL
+// 8. HISTORIAL GENERAL (FILTRO CORREGIDO)
 app.get('/api/historial-servicios', async (req, res) => {
     try {
         const { id_taller, patente, fechaInicio, fechaFin } = req.query;
@@ -200,16 +208,14 @@ app.get('/api/historial-servicios', async (req, res) => {
             .from('mantenimientos')
             .select(`
                 id_servicio, fecha_actual, kilometraje, trabajo_realizado, trabajo_proximo, fecha_proximo, costo,
-                clientes_vehiculos!inner ( id_taller, nombre_completo, telefono, patente, marca, modelo )
+                clientes_vehiculos!inner ( id_cliente, id_taller, nombre_completo, telefono, patente, marca, modelo )
             `)
+            .eq('clientes_vehiculos.id_taller', id_taller)
             .order('fecha_actual', { ascending: false });
 
-        if (id_taller) {
-            query = query.eq('clientes_vehiculos.id_taller', id_taller);
-        }
-
         if (patente && patente.trim() !== '') {
-            query = query.or(`patente.ilike.%${patente.trim()}%,nombre_completo.ilike.%${patente.trim()}%`, { foreignTable: 'clientes_vehiculos' });
+            const term = patente.trim();
+            query = query.or(`patente.ilike.%${term}%,nombre_completo.ilike.%${term}%`, { foreignTable: 'clientes_vehiculos' });
         }
 
         if (fechaInicio) {
@@ -243,5 +249,4 @@ app.get('/api/historial-servicios', async (req, res) => {
         res.status(500).json({ success: false, message: 'Error del servidor al obtener historial.' });
     }
 });
-
 app.listen(port, () => console.log(`Servidor de AppMecanico corriendo en puerto ${port}`));
