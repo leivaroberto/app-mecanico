@@ -117,8 +117,12 @@
                 <div class="card p-4 mb-4 bg-light">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="header-title mb-0">🔍 Buscador Vehicular / Cliente</h5>
-                        <button class="btn btn-sm btn-secondary" onclick="limpiarBusqueda()">❌ Limpiar Búsqueda</button>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-success" onclick="imprimirHistorialDesdeBuscador()">🖨️ Imprimir Historial</button>
+                            <button class="btn btn-sm btn-secondary" onclick="limpiarBusqueda()">❌ Limpiar Búsqueda</button>
+                        </div>
                     </div>
+                    
                     <div class="input-group">
                         <input type="text" id="buscarPatente" class="form-control" placeholder="Ingrese Patente (ej: AA123CD) o Nombre del Cliente (ej: Juan Pérez)">
                         <button class="btn btn-primary" onclick="buscarPorPatente()">Buscar</button>
@@ -229,11 +233,11 @@
                                     <th>Km</th>
                                     <th>Mantenimiento Realizado</th>
                                     <th>Próximo Mantenimiento</th>
-                                </tr>
+                                    <th>Acción</th> </tr>
                             </thead>
                             <tbody id="tabla-historial-body">
                                 <tr>
-                                    <td colspan="7" class="text-center text-muted p-3">Presiona "Buscar" para cargar los registros.</td>
+                                    <td colspan="8" class="text-center text-muted p-3">Presiona "Buscar" para cargar los registros.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -251,13 +255,15 @@
     const API_URL = 'https://app-mecanico.onrender.com';
     let tallerActualId = null;
     let nombreTallerActual = "Taller Mecánico";
-    let vehiculoActualBuscado = null;
     
-    // Variables para privacidad de ingresos
+    // Variables globales
+    let vehiculoActualBuscado = null;
+    let ultimosRegistrosBuscados = []; // Guarda lo que está visible en el buscador
+    
     let ingresosMontoReal = 0;
     let ingresosOcultos = false;
 
-    // --- LOGICA DE LOGIN Y BIOMETRIA ---
+    // --- LOGICA DE LOGIN ---
     window.addEventListener('DOMContentLoaded', () => {
         if (!window.PublicKeyCredential) document.getElementById('btnBiometria').style.display = 'none';
     });
@@ -363,7 +369,6 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id_servicio: idServicio })
             });
-            
             const fila = document.getElementById(`fila-aviso-${idServicio}`);
             if(fila) fila.remove();
 
@@ -381,6 +386,7 @@
         document.getElementById('buscarPatente').value = '';
         document.getElementById('resultadoBusqueda').innerHTML = '';
         vehiculoActualBuscado = null;
+        ultimosRegistrosBuscados = [];
     }
 
     async function buscarPorPatente() {
@@ -395,10 +401,28 @@
             const data = await res.json();
 
             if (data.exito && data.registros.length > 0) {
+                
+                // SOLUCIÓN AL BUG DE DUPLICADOS: Agrupar por patente para fusionar historiales rotos
+                const clientesAgrupados = {};
+                data.registros.forEach(r => {
+                    const pat = (r.patente || 'SIN_PATENTE').toUpperCase();
+                    if (!clientesAgrupados[pat]) {
+                        clientesAgrupados[pat] = { ...r, mantenimientos: r.mantenimientos || [] };
+                    } else {
+                        if (r.mantenimientos) {
+                            clientesAgrupados[pat].mantenimientos.push(...r.mantenimientos);
+                        }
+                    }
+                });
+
+                ultimosRegistrosBuscados = Object.values(clientesAgrupados);
                 let htmlResultado = '';
                 
-                data.registros.forEach(clienteInfo => {
-                    const mantenimientos = clienteInfo.mantenimientos || [];
+                ultimosRegistrosBuscados.forEach(clienteInfo => {
+                    // Ordenamos las fechas desde la más reciente
+                    clienteInfo.mantenimientos.sort((a, b) => new Date(b.fecha_actual) - new Date(a.fecha_actual));
+                    
+                    const mantenimientos = clienteInfo.mantenimientos;
                     const vehiculoDesc = `${clienteInfo.marca || ''} ${clienteInfo.modelo || ''}`.trim();
 
                     htmlResultado += `
@@ -410,7 +434,7 @@
                                 </div>
                                 <div class='d-flex gap-2'>
                                     <button class='btn btn-success btn-sm' onclick='prepararEImprimirCompleto(${JSON.stringify(clienteInfo).replace(/'/g, "&apos;")})'>📋 Imprimir Historial Completo (${mantenimientos.length})</button>
-                                    <button class='btn btn-outline-dark btn-sm' onclick='prepararEImprimirUltimo(${JSON.stringify(clienteInfo).replace(/'/g, "&apos;")})'>📄 Imprimir Último Servicio</button>
+                                    <button class='btn btn-outline-dark btn-sm' onclick='prepararEImprimirUltimo(${JSON.stringify(clienteInfo).replace(/'/g, "&apos;")})'>📄 Imprimir Último</button>
                                 </div>
                             </div>
 
@@ -428,7 +452,7 @@
                                             🎯 <strong class='text-primary'>Próxima Visita:</strong> ${m.trabajo_proximo || 'No especificado'}<br>
                                             🔔 <strong class='text-danger'>Fecha Próxima:</strong> ${m.fecha_proximo || 'Sin agendar'} ${m.aviso_enviado ? '✅ (Aviso enviado)' : ''}
                                         </div>
-                                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro(${m.id_servicio})">🗑️ Eliminar</button>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro(${m.id_servicio})" title="Eliminar este servicio">🗑️ Eliminar</button>
                                     </div>
                                 </li>`;
                         });
@@ -440,11 +464,22 @@
 
                 contenedor.innerHTML = htmlResultado;
             } else {
+                ultimosRegistrosBuscados = [];
                 contenedor.innerHTML = "<div class='alert alert-warning mt-2'>No se encontraron registros para la búsqueda realizada.</div>";
             }
         } catch (e) {
             contenedor.innerHTML = "<div class='alert alert-danger mt-2'>Error al conectar con el servidor.</div>";
         }
+    }
+
+    // --- FUNCION DEL NUEVO BOTON IMPRIMIR GLOBAL ---
+    function imprimirHistorialDesdeBuscador() {
+        if (!ultimosRegistrosBuscados || ultimosRegistrosBuscados.length === 0) {
+            return alert("Primero busca un vehículo para poder imprimir su historial.");
+        }
+        // Si hay varios resultados (ej: buscaron "Juan"), imprime el primer historial encontrado.
+        // Si buscó patente exacta, siempre será [0].
+        prepararEImprimirCompleto(ultimosRegistrosBuscados[0]);
     }
 
     function prepararEImprimirCompleto(clienteInfo) {
@@ -487,7 +522,7 @@
         });
 
         const tbody = document.getElementById('tabla-historial-body');
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted p-3">Cargando registros...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted p-3">Cargando registros...</td></tr>';
 
         try {
             const response = await fetch(`${API_URL}/api/historial-servicios?${queryParams.toString()}`);
@@ -497,7 +532,7 @@
                 tbody.innerHTML = '';
 
                 if (!resultado.data || resultado.data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted p-3">No se encontraron registros para los criterios ingresados.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted p-3">No se encontraron registros para los criterios ingresados.</td></tr>';
                     return;
                 }
 
@@ -513,6 +548,9 @@
                         <td>${item.kilometraje ? item.kilometraje.toLocaleString() + ' km' : '-'}</td>
                         <td>${item.trabajo || '-'}</td>
                         <td><span class="${item.fecha_proximo ? 'text-danger fw-bold' : 'text-muted'}">${proximoTxt}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro(${item.id})" title="Eliminar Registro">🗑️</button>
+                        </td>
                     `;
                     tbody.appendChild(fila);
                 });
@@ -521,7 +559,7 @@
             }
         } catch (error) {
             console.error('Error al realizar la consulta:', error);
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger p-3">Error de conexión al cargar el historial.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger p-3">Error de conexión al cargar el historial.</td></tr>';
         }
     }
 
@@ -530,6 +568,7 @@
         buscarHistorial();
     }
 
+    // --- FUNCION ELIMINAR ACTUALIZADA ---
     async function eliminarRegistro(idServicio) {
         if(!confirm('¿Estás seguro de que deseas ELIMINAR este registro para siempre?')) return;
         try {
@@ -537,8 +576,14 @@
             const data = await res.json();
             if(data.exito) {
                 alert('Registro eliminado.');
-                buscarPorPatente();
-                cargarEstadisticas();
+                
+                // Actualiza visualmente todo sin tener que recargar la página:
+                if (document.getElementById('buscarPatente').value.trim() !== '') {
+                    buscarPorPatente(); // Refresca pestaña buscador
+                }
+                buscarHistorial(); // Refresca pestaña historial general
+                cargarEstadisticas(); // Refresca la plata del mes
+                
             } else alert('Error al eliminar registro');
         } catch(e) { alert('Error de conexión.'); }
     }
@@ -709,19 +754,15 @@
             return alert('No hay credenciales guardadas. Primero debes ingresar manualmente con tu correo y contraseña.');
         }
 
-        // Verificar si el navegador soporta credenciales biométricas
         if (window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
             try {
-                // Intentar autenticación biométrica estricta
                 const credential = await navigator.credentials.get({
                     publicKey: {
                         challenge: new Uint8Array([1, 2, 3, 4]),
                         timeout: 60000,
-                        userVerification: "required" // Exige obligatoriamente huella / Face ID
+                        userVerification: "required" 
                     }
                 });
-
-                // Solo si la lectura biométrica fue EXITOSA se concede el acceso
                 if (credential) {
                     await ejecutarLogin(e, p);
                 } else {
@@ -729,8 +770,6 @@
                 }
             } catch (err) {
                 console.error("Error/Cancelación de biometría:", err);
-
-                // Manejo de errores específicos
                 if (err.name === 'NotAllowedError') {
                     alert('Lectura de huella cancelada o no reconocida. Debes ingresar con tu correo y contraseña.');
                 } else {
