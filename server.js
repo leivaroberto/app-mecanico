@@ -30,7 +30,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// 2. GUARDAR MANTENIMIENTO (INCLUYE COSTO Y TRABAJO PRÓXIMO)
+// 2. GUARDAR MANTENIMIENTO
 app.post('/api/guardar-mantenimiento', async (req, res) => {
     const datos = req.body;
     try {
@@ -54,7 +54,7 @@ app.post('/api/guardar-mantenimiento', async (req, res) => {
                 fecha_actual: datos.fecha_servicio,
                 kilometraje: Number(datos.kilometraje),
                 trabajo_realizado: datos.trabajo,
-                trabajo_proximo: datos.trabajo_proximo || '', // 👈 Guardamos el trabajo sugerido para la próxima
+                trabajo_proximo: datos.trabajo_proximo || '',
                 fecha_proximo: datos.fecha_proximo,
                 costo: Number(datos.costo) || 0
             });
@@ -86,7 +86,7 @@ app.get('/api/registros/buscar', async (req, res) => {
     }
 });
 
-// 4. AVISOS DE LA SEMANA
+// 4. AVISOS DE LA SEMANA (Mapea el servicio a realizar al trabajo_proximo)
 app.get('/avisos-semana', async (req, res) => {
     const { id_taller } = req.query;
     try {
@@ -108,8 +108,10 @@ app.get('/avisos-semana', async (req, res) => {
         if (error) throw error;
 
         const avisosNormalizados = (data || []).map(item => ({
-            id: item.id_servicio, fecha_proximo: item.fecha_proximo,
-            mantenimiento_realizado: item.trabajo_proximo ? `${item.trabajo_proximo} (Anterior: ${item.trabajo_realizado})` : item.trabajo_realizado,
+            id: item.id_servicio,
+            fecha_proximo: item.fecha_proximo,
+            // Si existe trabajo_proximo lo usa; de lo contrario usa trabajo_realizado como respaldo
+            mantenimiento_realizado: item.trabajo_proximo && item.trabajo_proximo.trim() !== '' ? item.trabajo_proximo : item.trabajo_realizado,
             clientes: { nombre: item.clientes_vehiculos?.nombre_completo, telefono: item.clientes_vehiculos?.telefono },
             vehiculos: { patente: item.clientes_vehiculos?.patente }
         }));
