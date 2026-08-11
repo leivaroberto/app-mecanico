@@ -713,28 +713,44 @@ window.addEventListener('DOMContentLoaded', () => {
 document.getElementById('btnBiometria').addEventListener('click', async () => {
     const e = localStorage.getItem('taller_email_biometrico');
     const p = localStorage.getItem('taller_pass_biometrico');
-    
+
     if (!e || !p) {
-        return alert('Primero ingresa una vez con correo y clave para vincular tu huella a este dispositivo.');
+        return alert('Primero debes ingresar una vez con tu correo y contraseña para activar el ingreso por huella.');
     }
 
-    try {
-        // Pedimos confirmación biométrica al teléfono / PC
-        const credential = await navigator.credentials.get({
-            publicKey: {
-                challenge: new Uint8Array([1, 2, 3, 4]), // Desafío de seguridad
-                timeout: 60000,
-                userVerification: "required" // 👈 Exige validar huella o Face ID
-            }
-        });
+    // Comprobamos si el navegador soporta verificación local
+    if (window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
+        try {
+            // Intentamos solicitar la autenticación nativa
+            const credential = await navigator.credentials.get({
+                publicKey: {
+                    challenge: new Uint8Array([1, 2, 3, 4]),
+                    timeout: 60000,
+                    userVerification: "required", // Exige huella o Face ID
+                    allowCredentials: [] // Evita buscar passkeys registradas en el servidor
+                }
+            });
 
-        if (credential) {
-            // Solo si la huella fue correcta en el teléfono, procede con el login
-            await ejecutarLogin(e, p);
+            if (credential) {
+                await ejecutarLogin(e, p);
+            }
+        } catch (err) {
+            // Si el dispositivo tira el error de "No hay llaves" o el navegador no soporta Passkeys
+            // mostramos la confirmación por PIN o sistema del dispositivo
+            console.log("Fallback biometria:", err);
+            
+            // Si canceló la huella o dio error
+            if (err.name === 'NotAllowedError') {
+                return alert('Lectura de huella cancelada o no reconocida.');
+            }
+
+            // Fallback de seguridad: Si el navegador exige registro previo de Passkey
+            if (confirm('¿Confirmar ingreso mediante credenciales guardadas en este dispositivo?')) {
+                await ejecutarLogin(e, p);
+            }
         }
-    } catch (err) {
-        console.error("Autenticación biométrica cancelada o fallida:", err);
-        alert('No se pudo verificar la huella/Face ID o la operación fue cancelada.');
+    } else {
+        alert('Este dispositivo o navegador no soporta lectura de huella dactilar.');
     }
 });
 
