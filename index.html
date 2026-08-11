@@ -701,7 +701,45 @@
             } else alert('Error al guardar: ' + data.mensaje);
         } catch (err) { alert('Error de conexión al guardar.'); }
     });
+ //   --------------------------------------------
+// --- LÓGICA DE BIOMETRÍA REAL (WEBAUTHN) ---
+window.addEventListener('DOMContentLoaded', () => {
+    // Verificar si el dispositivo soporta biometría nativa
+    if (!window.PublicKeyCredential || !PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
+        document.getElementById('btnBiometria').style.display = 'none';
+    }
+});
 
+document.getElementById('btnBiometria').addEventListener('click', async () => {
+    const e = localStorage.getItem('taller_email_biometrico');
+    const p = localStorage.getItem('taller_pass_biometrico');
+    
+    if (!e || !p) {
+        return alert('Primero ingresa una vez con correo y clave para vincular tu huella a este dispositivo.');
+    }
+
+    try {
+        // Pedimos confirmación biométrica al teléfono / PC
+        const credential = await navigator.credentials.get({
+            publicKey: {
+                challenge: new Uint8Array([1, 2, 3, 4]), // Desafío de seguridad
+                timeout: 60000,
+                userVerification: "required" // 👈 Exige validar huella o Face ID
+            }
+        });
+
+        if (credential) {
+            // Solo si la huella fue correcta en el teléfono, procede con el login
+            await ejecutarLogin(e, p);
+        }
+    } catch (err) {
+        console.error("Autenticación biométrica cancelada o fallida:", err);
+        alert('No se pudo verificar la huella/Face ID o la operación fue cancelada.');
+    }
+});
+
+    //--------------------------------------------------------------------------------------------
+    
     document.getElementById('btnCerrarSesion').addEventListener('click', () => location.reload());
 </script>
 </body>
