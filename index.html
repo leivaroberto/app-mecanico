@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AppMecanico - Panel de Taller</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
     <style>
         body { background-color: #f4f7f6; }
         .card { border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
@@ -14,6 +16,8 @@
         .nav-tabs .nav-link.active { color: #2b6cb0; font-weight: bold; }
         .btn-ojo { background: transparent; border: none; color: white; cursor: pointer; padding: 0 5px; font-size: 1.1rem; }
         .btn-ojo:hover { opacity: 0.8; }
+        .btn-biometria { font-weight: 500; transition: all 0.3s ease; }
+        .btn-biometria:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
@@ -36,7 +40,11 @@
                     </div>
                     <div class="d-grid gap-2">
                         <button type="submit" id="btnIngresar" class="btn btn-dark btn-lg">Ingresar con Clave</button>
-                        <button type="button" id="btnBiometria" class="btn btn-outline-primary mt-2">👆 Entrar con Huella / Face ID</button>
+                        
+                        <button type="button" id="btnBiometria" class="btn btn-outline-secondary btn-biometria mt-2 d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-fingerprint fs-3 text-primary"></i> 
+                            <span>Entrar con Huella / Face ID</span>
+                        </button>
                     </div>
                 </form>
             </div>
@@ -259,13 +267,6 @@
         await ejecutarLogin(document.getElementById('loginEmail').value, document.getElementById('loginPassword').value);
     });
 
-    document.getElementById('btnBiometria').addEventListener('click', async () => {
-        const e = localStorage.getItem('taller_email_biometrico');
-        const p = localStorage.getItem('taller_pass_biometrico');
-        if (!e || !p) return alert('Primero ingresa una vez con correo y clave para vincular tu huella.');
-        await ejecutarLogin(e, p);
-    });
-
     async function ejecutarLogin(email, password) {
         const btn = document.getElementById('btnIngresar');
         btn.disabled = true; btn.innerText = "Verificando...";
@@ -383,68 +384,68 @@
     }
 
     async function buscarPorPatente() {
-    const termino = document.getElementById('buscarPatente').value.trim();
-    const contenedor = document.getElementById('resultadoBusqueda');
-    
-    if (!termino) return alert("Ingrese una patente o nombre de cliente para buscar.");
-    contenedor.innerHTML = "<p class='text-muted'>Buscando en la base de datos...</p>";
+        const termino = document.getElementById('buscarPatente').value.trim();
+        const contenedor = document.getElementById('resultadoBusqueda');
+        
+        if (!termino) return alert("Ingrese una patente o nombre de cliente para buscar.");
+        contenedor.innerHTML = "<p class='text-muted'>Buscando en la base de datos...</p>";
 
-    try {
-        const res = await fetch(`${API_URL}/api/registros/buscar?termino=${encodeURIComponent(termino)}&id_taller=${tallerActualId}`);
-        const data = await res.json();
+        try {
+            const res = await fetch(`${API_URL}/api/registros/buscar?termino=${encodeURIComponent(termino)}&id_taller=${tallerActualId}`);
+            const data = await res.json();
 
-        if (data.exito && data.registros.length > 0) {
-            let htmlResultado = '';
-            
-            data.registros.forEach(clienteInfo => {
-                const mantenimientos = clienteInfo.mantenimientos || [];
-                const vehiculoDesc = `${clienteInfo.marca || ''} ${clienteInfo.modelo || ''}`.trim();
+            if (data.exito && data.registros.length > 0) {
+                let htmlResultado = '';
+                
+                data.registros.forEach(clienteInfo => {
+                    const mantenimientos = clienteInfo.mantenimientos || [];
+                    const vehiculoDesc = `${clienteInfo.marca || ''} ${clienteInfo.modelo || ''}`.trim();
 
-                htmlResultado += `
-                    <div class='card p-3 border-secondary mb-4'>
-                        <div class='d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2'>
-                            <div>
-                                <h5 class='mb-1'><strong>Cliente:</strong> ${clienteInfo.nombre_completo}</h5>
-                                <p class='mb-0 text-muted'>📱 <strong>Teléfono:</strong> ${clienteInfo.telefono} ${vehiculoDesc ? ' | 🚗 <strong>Vehículo:</strong> ' + vehiculoDesc : ''} | 🚗 <strong>Patente:</strong> <span class='badge bg-dark fs-6'>${clienteInfo.patente}</span></p>
-                            </div>
-                            <div class='d-flex gap-2'>
-                                <button class='btn btn-success btn-sm' onclick='prepararEImprimirCompleto(${JSON.stringify(clienteInfo).replace(/'/g, "&apos;")})'>📋 Imprimir Historial Completo (${mantenimientos.length})</button>
-                                <button class='btn btn-outline-dark btn-sm' onclick='prepararEImprimirUltimo(${JSON.stringify(clienteInfo).replace(/'/g, "&apos;")})'>📄 Imprimir Último Servicio</button>
-                            </div>
-                        </div>
-
-                        <h6 class='border-bottom pb-2 mt-2'><strong>Historial de Intervenciones:</strong></h6>
-                        <ul class='list-group list-group-flush'>`;
-
-                if (mantenimientos.length > 0) {
-                    mantenimientos.forEach(m => {
-                        htmlResultado += `
-                            <li class='list-group-item px-0'>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        📅 <strong>Fecha:</strong> ${m.fecha_actual || '-'} | 🚗 <strong>Km:</strong> ${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'} | 💰 <strong>Costo:</strong> $${m.costo ? Number(m.costo).toLocaleString() : '0'}<br>
-                                        🔧 <strong>Trabajo Realizado:</strong> ${m.trabajo_realizado || '-'}<br>
-                                        🎯 <strong class='text-primary'>Próxima Visita:</strong> ${m.trabajo_proximo || 'No especificado'}<br>
-                                        🔔 <strong class='text-danger'>Fecha Próxima:</strong> ${m.fecha_proximo || 'Sin agendar'} ${m.aviso_enviado ? '✅ (Aviso enviado)' : ''}
-                                    </div>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro(${m.id_servicio})">🗑️ Eliminar</button>
+                    htmlResultado += `
+                        <div class='card p-3 border-secondary mb-4'>
+                            <div class='d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2'>
+                                <div>
+                                    <h5 class='mb-1'><strong>Cliente:</strong> ${clienteInfo.nombre_completo}</h5>
+                                    <p class='mb-0 text-muted'>📱 <strong>Teléfono:</strong> ${clienteInfo.telefono} ${vehiculoDesc ? ' | 🚗 <strong>Vehículo:</strong> ' + vehiculoDesc : ''} | 🚗 <strong>Patente:</strong> <span class='badge bg-dark fs-6'>${clienteInfo.patente}</span></p>
                                 </div>
-                            </li>`;
-                    });
-                } else {
-                    htmlResultado += `<li class='list-group-item text-muted'>No hay mantenimientos registrados para este vehículo.</li>`;
-                }
-                htmlResultado += "</ul></div>";
-            });
+                                <div class='d-flex gap-2'>
+                                    <button class='btn btn-success btn-sm' onclick='prepararEImprimirCompleto(${JSON.stringify(clienteInfo).replace(/'/g, "&apos;")})'>📋 Imprimir Historial Completo (${mantenimientos.length})</button>
+                                    <button class='btn btn-outline-dark btn-sm' onclick='prepararEImprimirUltimo(${JSON.stringify(clienteInfo).replace(/'/g, "&apos;")})'>📄 Imprimir Último Servicio</button>
+                                </div>
+                            </div>
 
-            contenedor.innerHTML = htmlResultado;
-        } else {
-            contenedor.innerHTML = "<div class='alert alert-warning mt-2'>No se encontraron registros para la búsqueda realizada.</div>";
+                            <h6 class='border-bottom pb-2 mt-2'><strong>Historial de Intervenciones:</strong></h6>
+                            <ul class='list-group list-group-flush'>`;
+
+                    if (mantenimientos.length > 0) {
+                        mantenimientos.forEach(m => {
+                            htmlResultado += `
+                                <li class='list-group-item px-0'>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            📅 <strong>Fecha:</strong> ${m.fecha_actual || '-'} | 🚗 <strong>Km:</strong> ${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'} | 💰 <strong>Costo:</strong> $${m.costo ? Number(m.costo).toLocaleString() : '0'}<br>
+                                            🔧 <strong>Trabajo Realizado:</strong> ${m.trabajo_realizado || '-'}<br>
+                                            🎯 <strong class='text-primary'>Próxima Visita:</strong> ${m.trabajo_proximo || 'No especificado'}<br>
+                                            🔔 <strong class='text-danger'>Fecha Próxima:</strong> ${m.fecha_proximo || 'Sin agendar'} ${m.aviso_enviado ? '✅ (Aviso enviado)' : ''}
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro(${m.id_servicio})">🗑️ Eliminar</button>
+                                    </div>
+                                </li>`;
+                        });
+                    } else {
+                        htmlResultado += `<li class='list-group-item text-muted'>No hay mantenimientos registrados para este vehículo.</li>`;
+                    }
+                    htmlResultado += "</ul></div>";
+                });
+
+                contenedor.innerHTML = htmlResultado;
+            } else {
+                contenedor.innerHTML = "<div class='alert alert-warning mt-2'>No se encontraron registros para la búsqueda realizada.</div>";
+            }
+        } catch (e) {
+            contenedor.innerHTML = "<div class='alert alert-danger mt-2'>Error al conectar con el servidor.</div>";
         }
-    } catch (e) {
-        contenedor.innerHTML = "<div class='alert alert-danger mt-2'>Error al conectar con el servidor.</div>";
     }
-}
 
     function prepararEImprimirCompleto(clienteInfo) {
         vehiculoActualBuscado = {
@@ -698,52 +699,49 @@
             } else alert('Error al guardar: ' + data.mensaje);
         } catch (err) { alert('Error de conexión al guardar.'); }
     });
- //   --------------------------------------------
-// --- LÓGICA DE BIOMETRÍA ESTRICTA Y SEGURA ---
-document.getElementById('btnBiometria').addEventListener('click', async () => {
-    const e = localStorage.getItem('taller_email_biometrico');
-    const p = localStorage.getItem('taller_pass_biometrico');
 
-    if (!e || !p) {
-        return alert('No hay credenciales guardadas. Primero debes ingresar manualmente con tu correo y contraseña.');
-    }
+    // --- LÓGICA DE BIOMETRÍA ESTRICTA Y SEGURA ---
+    document.getElementById('btnBiometria').addEventListener('click', async () => {
+        const e = localStorage.getItem('taller_email_biometrico');
+        const p = localStorage.getItem('taller_pass_biometrico');
 
-    // Verificar si el navegador soporta credenciales biométricas
-    if (window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
-        try {
-            // Intentar autenticación biométrica estricta
-            const credential = await navigator.credentials.get({
-                publicKey: {
-                    challenge: new Uint8Array([1, 2, 3, 4]),
-                    timeout: 60000,
-                    userVerification: "required" // Exige obligatoriamente huella / Face ID
-                }
-            });
-
-            // Solo si la lectura biométrica fue EXITOSA se concede el acceso
-            if (credential) {
-                await ejecutarLogin(e, p);
-            } else {
-                alert('No se pudo verificar la huella/Face ID. Por favor ingresa con correo y contraseña.');
-            }
-        } catch (err) {
-            console.error("Error/Cancelación de biometría:", err);
-
-            // Manejo de errores específicos
-            if (err.name === 'NotAllowedError') {
-                alert('Lectura de huella cancelada o no reconocida. Debes ingresar con tu correo y contraseña.');
-            } else {
-                alert('No hay llaves de acceso o biometría disponible en este dispositivo. Por favor ingresa con tu correo y contraseña.');
-            }
-            // 🛑 NO SE PERMITE EL INGRESO AUTOMÁTICO
+        if (!e || !p) {
+            return alert('No hay credenciales guardadas. Primero debes ingresar manualmente con tu correo y contraseña.');
         }
-    } else {
-        alert('Este dispositivo o navegador no soporta lectura de huella dactilar.');
-    }
-});
 
-    //--------------------------------------------------------------------------------------------
-    
+        // Verificar si el navegador soporta credenciales biométricas
+        if (window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
+            try {
+                // Intentar autenticación biométrica estricta
+                const credential = await navigator.credentials.get({
+                    publicKey: {
+                        challenge: new Uint8Array([1, 2, 3, 4]),
+                        timeout: 60000,
+                        userVerification: "required" // Exige obligatoriamente huella / Face ID
+                    }
+                });
+
+                // Solo si la lectura biométrica fue EXITOSA se concede el acceso
+                if (credential) {
+                    await ejecutarLogin(e, p);
+                } else {
+                    alert('No se pudo verificar la huella/Face ID. Por favor ingresa con correo y contraseña.');
+                }
+            } catch (err) {
+                console.error("Error/Cancelación de biometría:", err);
+
+                // Manejo de errores específicos
+                if (err.name === 'NotAllowedError') {
+                    alert('Lectura de huella cancelada o no reconocida. Debes ingresar con tu correo y contraseña.');
+                } else {
+                    alert('No hay llaves de acceso o biometría disponible en este dispositivo. Por favor ingresa con tu correo y contraseña.');
+                }
+            }
+        } else {
+            alert('Este dispositivo o navegador no soporta lectura de huella dactilar.');
+        }
+    });
+
     document.getElementById('btnCerrarSesion').addEventListener('click', () => location.reload());
 </script>
 </body>
