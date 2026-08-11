@@ -240,7 +240,7 @@
         try {
             const res = await fetch(`${API_URL}/avisos-semana?id_taller=${tallerActualId}`);
             const avisos = await res.json();
-            if (!avisos || !avisos.length) return tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success">¡Sin vencimientos en los próximos 7 días! 🎉</td></tr>';
+            if (!avisos || !avisos.length) return tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success">¡Sin vencimientos pendientes! 🎉</td></tr>';
             
             tbody.innerHTML = avisos.map(i => {
                 const nombre = i.clientes?.nombre || 'Sin nombre';
@@ -251,15 +251,41 @@
                 
                 const mje = encodeURIComponent(`Hola ${nombre}, te recordamos desde el Taller que tu vehículo (${pat}) tiene programado su próximo servicio (${servicio}) para la fecha ${fechaProxima}. ¡Escríbenos para agendar tu turno!`);
                 
-                return `<tr>
+                return `<tr id="fila-aviso-${i.id}">
                     <td><span class="badge bg-danger">${fechaProxima}</span></td>
                     <td><strong>${nombre}</strong></td>
                     <td><span class="badge bg-secondary">${pat}</span></td>
                     <td><strong class="text-primary">${servicio}</strong></td>
-                    <td>${tel ? `<a href="https://wa.me/${tel.replace(/\D/g, '')}?text=${mje}" target="_blank" class="btn btn-sm btn-success">📲 Enviar WA</a>` : '<span class="text-muted">Sin teléfono</span>'}</td>
+                    <td>${tel ? `<button onclick="enviarWhatsAppYMarcar(${i.id}, '${tel.replace(/\D/g, '')}', '${mje}')" class="btn btn-sm btn-success">📲 Enviar WA</button>` : '<span class="text-muted">Sin teléfono</span>'}</td>
                 </tr>`;
             }).join('');
         } catch (e) { tbody.innerHTML = '<tr><td colspan="5" class="text-danger text-center">Error al consultar avisos.</td></tr>'; }
+    }
+
+    async function enviarWhatsAppYMarcar(idServicio, telefono, mensaje) {
+        // 1. Abrir WhatsApp en pestaña nueva
+        window.open(`https://wa.me/${telefono}?text=${mensaje}`, '_blank');
+        
+        // 2. Marcar en base de datos como enviado
+        try {
+            await fetch(`${API_URL}/api/marcar-aviso-enviado`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_servicio: idServicio })
+            });
+            
+            // 3. Ocultar la fila inmediatamente de la pantalla
+            const fila = document.getElementById(`fila-aviso-${idServicio}`);
+            if(fila) fila.remove();
+
+            // Si no quedan avisos en la tabla
+            const tbody = document.getElementById('tablaAvisosBody');
+            if(tbody.children.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success">¡Sin vencimientos pendientes! 🎉</td></tr>';
+            }
+        } catch(e) {
+            console.error("Error al marcar aviso:", e);
+        }
     }
 
     // --- BUSQUEDA, LIMPIAR Y ELIMINAR ---
@@ -327,7 +353,7 @@
                                         📅 <strong>Fecha:</strong> ${m.fecha_actual || '-'} | 🚗 <strong>Km:</strong> ${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'} | 💰 <strong>Costo:</strong> $${m.costo ? Number(m.costo).toLocaleString() : '0'}<br>
                                         🔧 <strong>Trabajo Realizado:</strong> ${m.trabajo_realizado || '-'}<br>
                                         🎯 <strong class='text-primary'>Próxima Visita (A Realizar):</strong> ${m.trabajo_proximo || 'No especificado'}<br>
-                                        🔔 <strong class='text-danger'>Fecha Próxima:</strong> ${m.fecha_proximo || 'Sin agendar'}
+                                        🔔 <strong class='text-danger'>Fecha Próxima:</strong> ${m.fecha_proximo || 'Sin agendar'} ${m.aviso_enviado ? '✅ (Aviso enviado)' : ''}
                                     </div>
                                     <button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro(${m.id_servicio})">🗑️ Eliminar</button>
                                 </div>
