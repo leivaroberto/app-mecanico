@@ -2,28 +2,82 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AppMecanico - Panel de Taller</title>
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
     <style>
+        /* ESTILOS BASE (PC Y GENERAL) */
         body { background-color: #f4f7f6; }
         .card { border-radius: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
         .header-title { color: #2c3e50; font-weight: bold; }
         .oculto { display: none !important; }
-        .nav-tabs .nav-link { font-weight: 600; color: #6c757d; }
-        .nav-tabs .nav-link.active { color: #2b6cb0; font-weight: bold; }
         .btn-ojo { background: transparent; border: none; color: white; cursor: pointer; padding: 0 5px; font-size: 1.1rem; }
         .btn-ojo:hover { opacity: 0.8; }
         .btn-biometria { font-weight: 500; transition: all 0.3s ease; }
         .btn-biometria:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        
+        /* Estilos Tabs en PC */
+        @media (min-width: 769px) {
+            .nav-tabs .nav-link { font-weight: 600; color: #6c757d; border: none; border-bottom: 3px solid transparent; }
+            .nav-tabs .nav-link:hover { border-color: transparent; color: #2b6cb0; }
+            .nav-tabs .nav-link.active { color: #2b6cb0; font-weight: bold; border-bottom: 3px solid #2b6cb0; background: transparent; }
+            .botones-impresion { display: flex; gap: 8px; }
+        }
+
+        /* 📱 AJUSTES PERFECTOS PARA CELULAR */
+        @media (max-width: 768px) {
+            body { padding-top: 10px; }
+            .container { margin-top: 0 !important; padding-left: 10px; padding-right: 10px; }
+            .card { padding: 1.2rem !important; }
+            
+            /* Solapas Deslizables (Scroll Horizontal) */
+            .nav-tabs {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                overflow-y: hidden;
+                white-space: nowrap;
+                -webkit-overflow-scrolling: touch; /* Suavidad en iOS */
+                border-bottom: none;
+                padding-bottom: 8px;
+                margin-bottom: 1rem !important;
+            }
+            .nav-tabs::-webkit-scrollbar { height: 4px; display: none; } /* Oculta scrollbar visual pero permite touch */
+            .nav-tabs .nav-link { 
+                border: 1px solid #dee2e6;
+                border-radius: 20px; /* Estilo píldora */
+                margin-right: 8px;
+                background: white;
+                color: #495057;
+                padding: 0.4rem 1rem;
+                font-size: 0.9rem;
+            }
+            .nav-tabs .nav-link.active {
+                background-color: #2b6cb0;
+                color: white !important;
+                border-color: #2b6cb0;
+            }
+
+            /* Tipografía y Tablas ajustadas */
+            .header-title { font-size: 1.4rem; }
+            h4 { font-size: 1.2rem; }
+            .table { font-size: 0.85rem; }
+            
+            /* Botones apilados en celular para el pulgar */
+            .botones-impresion { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 10px; }
+            .botones-impresion button { width: 100%; }
+            .buscador-header { flex-direction: column; align-items: stretch !important; gap: 10px; }
+        }
     </style>
 </head>
 <body>
 
 <div class="container mt-4 mb-5">
 
+    <!-- LOGIN -->
     <div id="seccionLogin" class="row justify-content-center mt-5">
         <div class="col-md-5">
             <div class="card p-4 text-center">
@@ -51,54 +105,57 @@
         </div>
     </div>
 
+    <!-- APP PRINCIPAL -->
     <div id="seccionApp" class="oculto">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 id="tituloTaller" class="header-title">🔧 Taller Mecánico</h2>
-            <button id="btnCerrarSesion" class="btn btn-outline-danger btn-sm">Cerrar Sesión</button>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 id="tituloTaller" class="header-title mb-0">🔧 Taller Mecánico</h2>
+            <button id="btnCerrarSesion" class="btn btn-outline-danger btn-sm">Salir</button>
         </div>
 
+        <!-- SOLAPAS CON FORMATO RESPONSIVO -->
         <ul class="nav nav-tabs mb-4" id="appTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab">📊 Inicio</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="buscar-tab" data-bs-toggle="tab" data-bs-target="#buscar" type="button" role="tab">🔍 Buscar Vehículo / Cliente</button>
+                <button class="nav-link" id="buscar-tab" data-bs-toggle="tab" data-bs-target="#buscar" type="button" role="tab">🔍 Buscar Vehículo</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="nuevo-tab" data-bs-toggle="tab" data-bs-target="#nuevo" type="button" role="tab">📝 Registrar Servicio</button>
+                <button class="nav-link" id="nuevo-tab" data-bs-toggle="tab" data-bs-target="#nuevo" type="button" role="tab">📝 Nuevo Servicio</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="historial-tab" data-bs-toggle="tab" data-bs-target="#historial" type="button" role="tab" onclick="buscarHistorial()">📋 Historial General</button>
+                <button class="nav-link" id="historial-tab" data-bs-toggle="tab" data-bs-target="#historial" type="button" role="tab" onclick="buscarHistorial()">📋 Historial</button>
             </li>  
         </ul>
 
         <div class="tab-content">
             
+            <!-- INICIO -->
             <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <div class="card bg-primary text-white p-3 text-center">
-                            <h5>Vehículos Atendidos este Mes</h5>
-                            <h2 id="statVehiculos">--</h2>
+                <div class="row mb-4 g-3">
+                    <div class="col-md-6 col-12">
+                        <div class="card bg-primary text-white p-3 text-center h-100 justify-content-center">
+                            <h6 class="mb-2">Vehículos Atendidos este Mes</h6>
+                            <h2 id="statVehiculos" class="mb-0">--</h2>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="card bg-success text-white p-3 text-center mt-3 mt-md-0 position-relative">
-                            <div class="d-flex justify-content-center align-items-center gap-2">
-                                <h5 class="mb-0">Ingresos Generados este Mes</h5>
+                    <div class="col-md-6 col-12">
+                        <div class="card bg-success text-white p-3 text-center position-relative h-100 justify-content-center">
+                            <div class="d-flex justify-content-center align-items-center gap-2 mb-2">
+                                <h6 class="mb-0">Ingresos Generados este Mes</h6>
                                 <button type="button" class="btn-ojo" id="btnToggleIngresos" onclick="togglePrivacidadIngresos()" title="Ocultar/Mostrar monto">👁️</button>
                             </div>
-                            <h2 id="statIngresos" class="mt-2">$ --</h2>
+                            <h2 id="statIngresos" class="mb-0">$ --</h2>
                         </div>
                     </div>
                 </div>
 
                 <div class="card shadow-sm mb-4">
                     <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">🔔 Recordatorios / Avisos de la Semana</h5>
+                        <h6 class="mb-0 fw-bold">🔔 Avisos de la Semana</h6>
                         <button class="btn btn-sm btn-outline-dark" onclick="cargarAvisosSemana()">🔄 Actualizar</button>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body p-0 p-md-3">
                         <div class="table-responsive">
                             <table class="table table-hover align-middle mb-0">
                                 <thead class="table-light">
@@ -113,72 +170,74 @@
                 </div>
             </div>
 
+            <!-- BUSCAR -->
             <div class="tab-pane fade" id="buscar" role="tabpanel">
                 <div class="card p-4 mb-4 bg-light">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="header-title mb-0">🔍 Buscador Vehicular / Cliente</h5>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-sm btn-success" onclick="imprimirHistorialDesdeBuscador()">🖨️ Imprimir Historial</button>
-                            <button class="btn btn-sm btn-secondary" onclick="limpiarBusqueda()">❌ Limpiar Búsqueda</button>
+                    <div class="d-flex justify-content-between align-items-center mb-3 buscador-header">
+                        <h5 class="header-title mb-0">🔍 Buscador Vehicular</h5>
+                        <div class="botones-impresion">
+                            <button class="btn btn-success" onclick="imprimirHistorialDesdeBuscador()">🖨️ Imprimir Todo</button>
+                            <button class="btn btn-secondary" onclick="limpiarBusqueda()">❌ Limpiar</button>
                         </div>
                     </div>
                     
                     <div class="input-group">
-                        <input type="text" id="buscarPatente" class="form-control" placeholder="Ingrese Patente (ej: AA123CD) o Nombre del Cliente (ej: Juan Pérez)">
-                        <button class="btn btn-primary" onclick="buscarPorPatente()">Buscar</button>
+                        <input type="text" id="buscarPatente" class="form-control" placeholder="Patente o Nombre (ej: Juan)">
+                        <button class="btn btn-primary px-4" onclick="buscarPorPatente()">Buscar</button>
                     </div>
                     <div id="resultadoBusqueda" class="mt-4"></div>
                 </div>
             </div>
 
+            <!-- NUEVO REGISTRO -->
             <div class="tab-pane fade" id="nuevo" role="tabpanel">
                 <div class="card p-4">
                     <h4 class="mb-4 text-center">Registrar Nuevo Mantenimiento</h4>
                     <form id="mantenimientoForm">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
+                        <div class="row mb-3 g-3">
+                            <div class="col-md-6 col-12">
                                 <label class="form-label">Nombre del Cliente</label>
                                 <input type="text" class="form-control" id="nombre" placeholder="Ej: Juan Pérez" required>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-12">
                                 <label class="form-label">Teléfono (WhatsApp)</label>
                                 <input type="tel" class="form-control" id="telefono" placeholder="Ej: +5491122334455" required>
                             </div>
                         </div>
 
-                        <div class="row mb-3">
-                            <div class="col-md-4">
+                        <div class="row mb-3 g-3">
+                            <div class="col-md-4 col-12">
                                 <label class="form-label">Marca</label>
-                                <input type="text" class="form-control" id="marca" placeholder="Ej: Ford, Toyota, VW">
+                                <input type="text" class="form-control" id="marca" placeholder="Ej: Ford">
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-4 col-12">
                                 <label class="form-label">Modelo</label>
-                                <input type="text" class="form-control" id="modelo" placeholder="Ej: Focus, Hilux, Gol">
+                                <input type="text" class="form-control" id="modelo" placeholder="Ej: Focus">
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-4 col-12">
                                 <label class="form-label">Patente / Dominio</label>
                                 <input type="text" class="form-control text-uppercase" id="patente" placeholder="AB123CD" required>
                             </div>
                         </div>
 
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Kilometraje Actual</label>
+                        <div class="row mb-3 g-3">
+                            <div class="col-md-6 col-6">
+                                <label class="form-label">Kilometraje</label>
                                 <input type="number" class="form-control" id="kilometraje" placeholder="Ej: 85000" required>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Costo Total ($)</label>
+                            <div class="col-md-6 col-6">
+                                <label class="form-label">Costo ($)</label>
                                 <input type="number" class="form-control bg-light text-success fw-bold" id="costo" placeholder="Ej: 45000" required>
                             </div>
                         </div>
 
-                        <div class="row mb-3">
-                            <div class="col-md-6">
+                        <div class="row mb-3 g-3">
+                            <div class="col-md-6 col-12">
                                 <label class="form-label">Fecha del Servicio</label>
                                 <input type="date" class="form-control" id="fecha_servicio" required>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Fecha Próximo Mantenimiento <small class="text-muted">(Opcional)</small></label>
+                            <div class="col-md-6 col-12">
+                                <label class="form-label">Fecha Próximo <small class="text-muted">(Opcional)</small></label>
                                 <input type="date" class="form-control" id="fecha_proximo">
                             </div>
                         </div>
@@ -187,8 +246,8 @@
                             <textarea class="form-control" id="trabajo" rows="3" placeholder="Ej: Cambio de aceite, filtro y bujías" required></textarea>
                         </div>
                         <div class="mb-4">
-                            <label class="form-label text-primary font-weight-bold">Trabajo a realizar en la próxima visita <small class="text-muted">(Opcional)</small></label>
-                            <textarea class="form-control border-primary" id="trabajo_proximo" rows="2" placeholder="Ej: Revisión y cambio de pastillas de freno delanteras"></textarea>
+                            <label class="form-label text-primary font-weight-bold">A realizar en la próxima visita <small class="text-muted">(Opcional)</small></label>
+                            <textarea class="form-control border-primary" id="trabajo_proximo" rows="2" placeholder="Ej: Revisión de pastillas de freno"></textarea>
                         </div>
                         <div class="d-grid">
                             <button type="submit" class="btn btn-success btn-lg">Guardar Mantenimiento</button>
@@ -197,26 +256,27 @@
                 </div>
             </div>
 
+            <!-- HISTORIAL GENERAL -->
             <div class="tab-pane fade" id="historial" role="tabpanel">
                 <div class="card p-4">
-                    <h4 class="mb-3">📋 Historial General de Servicios Realizados</h4>
+                    <h4 class="mb-3">📋 Historial General</h4>
                     
                     <div class="card p-3 bg-light mb-4 border-0">
                         <form id="form-filtro-historial" onsubmit="buscarHistorial(event)" class="row g-3 align-items-end">
-                            <div class="col-md-3">
+                            <div class="col-md-3 col-12">
                                 <label for="filtro-patente" class="form-label fw-bold">Patente o Cliente:</label>
-                                <input type="text" id="filtro-patente" class="form-control" placeholder="Ej: ABC123 / Juan Pérez">
+                                <input type="text" id="filtro-patente" class="form-control" placeholder="Ej: ABC123 / Juan">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-3 col-6">
                                 <label for="filtro-fecha-inicio" class="form-label fw-bold">Desde:</label>
                                 <input type="date" id="filtro-fecha-inicio" class="form-control">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-3 col-6">
                                 <label for="filtro-fecha-fin" class="form-label fw-bold">Hasta:</label>
                                 <input type="date" id="filtro-fecha-fin" class="form-control">
                             </div>
-                            <div class="col-md-3 d-flex gap-2">
-                                <button type="submit" class="btn btn-primary w-100">🔍 Buscar</button>
+                            <div class="col-md-3 col-12 d-flex gap-2">
+                                <button type="submit" class="btn btn-primary flex-grow-1">🔍 Buscar</button>
                                 <button type="button" onclick="limpiarFiltrosHistorial()" class="btn btn-secondary">Limpiar</button>
                             </div>
                         </form>
@@ -228,16 +288,16 @@
                                 <tr>
                                     <th>Fecha</th>
                                     <th>Cliente</th>
-                                    <th>Teléfono</th>
                                     <th>Vehículo / Patente</th>
                                     <th>Km</th>
-                                    <th>Mantenimiento Realizado</th>
-                                    <th>Próximo Mantenimiento</th>
-                                    <th>Acción</th> </tr>
+                                    <th>Realizado</th>
+                                    <th>Próximo</th>
+                                    <th>Acción</th> 
+                                </tr>
                             </thead>
                             <tbody id="tabla-historial-body">
                                 <tr>
-                                    <td colspan="8" class="text-center text-muted p-3">Presiona "Buscar" para cargar los registros.</td>
+                                    <td colspan="7" class="text-center text-muted p-3">Presiona "Buscar" para cargar los registros.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -256,14 +316,12 @@
     let tallerActualId = null;
     let nombreTallerActual = "Taller Mecánico";
     
-    // Variables globales
     let vehiculoActualBuscado = null;
-    let ultimosRegistrosBuscados = []; // Guarda lo que está visible en el buscador
+    let ultimosRegistrosBuscados = [];
     
     let ingresosMontoReal = 0;
     let ingresosOcultos = false;
 
-    // --- LOGICA DE LOGIN ---
     window.addEventListener('DOMContentLoaded', () => {
         if (!window.PublicKeyCredential) document.getElementById('btnBiometria').style.display = 'none';
     });
@@ -302,7 +360,6 @@
         }
     }
 
-    // --- DASHBOARD Y ESTADÍSTICAS ---
     async function cargarEstadisticas() {
         try {
             const res = await fetch(`${API_URL}/api/estadisticas?id_taller=${tallerActualId}`);
@@ -334,11 +391,11 @@
 
     async function cargarAvisosSemana() {
         const tbody = document.getElementById('tablaAvisosBody');
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Cargando avisos...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted p-3">Cargando avisos...</td></tr>';
         try {
             const res = await fetch(`${API_URL}/avisos-semana?id_taller=${tallerActualId}`);
             const avisos = await res.json();
-            if (!avisos || !avisos.length) return tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success">¡Sin vencimientos pendientes! 🎉</td></tr>';
+            if (!avisos || !avisos.length) return tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success p-3">¡Sin vencimientos pendientes! 🎉</td></tr>';
             
             tbody.innerHTML = avisos.map(i => {
                 const nombre = i.clientes?.nombre || 'Sin nombre';
@@ -355,7 +412,7 @@
                     <td><strong>${nombre}</strong></td>
                     <td>${vehiculoDesc ? '<strong>'+vehiculoDesc+'</strong><br>' : ''}<span class="badge bg-secondary">${pat}</span></td>
                     <td><strong class="text-primary">${servicio}</strong></td>
-                    <td>${tel ? `<button onclick="enviarWhatsAppYMarcar(${i.id}, '${tel.replace(/\D/g, '')}', '${mje}')" class="btn btn-sm btn-success">📲 Enviar WA</button>` : '<span class="text-muted">Sin teléfono</span>'}</td>
+                    <td>${tel ? `<button onclick="enviarWhatsAppYMarcar(${i.id}, '${tel.replace(/\D/g, '')}', '${mje}')" class="btn btn-sm btn-success w-100">📲 WA</button>` : '<span class="text-muted">Sin teléfono</span>'}</td>
                 </tr>`;
             }).join('');
         } catch (e) { tbody.innerHTML = '<tr><td colspan="5" class="text-danger text-center">Error al consultar avisos.</td></tr>'; }
@@ -374,14 +431,11 @@
 
             const tbody = document.getElementById('tablaAvisosBody');
             if(tbody.children.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success">¡Sin vencimientos pendientes! 🎉</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success p-3">¡Sin vencimientos pendientes! 🎉</td></tr>';
             }
-        } catch(e) {
-            console.error("Error al marcar aviso:", e);
-        }
+        } catch(e) { console.error("Error al marcar aviso:", e); }
     }
 
-    // --- BUSQUEDA POR PATENTE O CLIENTE ---
     function limpiarBusqueda() {
         document.getElementById('buscarPatente').value = '';
         document.getElementById('resultadoBusqueda').innerHTML = '';
@@ -394,15 +448,13 @@
         const contenedor = document.getElementById('resultadoBusqueda');
         
         if (!termino) return alert("Ingrese una patente o nombre de cliente para buscar.");
-        contenedor.innerHTML = "<p class='text-muted'>Buscando en la base de datos...</p>";
+        contenedor.innerHTML = "<p class='text-muted mt-3'>Buscando en la base de datos...</p>";
 
         try {
             const res = await fetch(`${API_URL}/api/registros/buscar?termino=${encodeURIComponent(termino)}&id_taller=${tallerActualId}`);
             const data = await res.json();
 
             if (data.exito && data.registros.length > 0) {
-                
-                // SOLUCIÓN AL BUG DE DUPLICADOS: Agrupar por patente para fusionar historiales rotos
                 const clientesAgrupados = {};
                 data.registros.forEach(r => {
                     const pat = (r.patente || 'SIN_PATENTE').toUpperCase();
@@ -419,21 +471,19 @@
                 let htmlResultado = '';
                 
                 ultimosRegistrosBuscados.forEach(clienteInfo => {
-                    // Ordenamos las fechas desde la más reciente
                     clienteInfo.mantenimientos.sort((a, b) => new Date(b.fecha_actual) - new Date(a.fecha_actual));
-                    
                     const mantenimientos = clienteInfo.mantenimientos;
                     const vehiculoDesc = `${clienteInfo.marca || ''} ${clienteInfo.modelo || ''}`.trim();
 
                     htmlResultado += `
-                        <div class='card p-3 border-secondary mb-4'>
+                        <div class='card p-3 border-secondary mb-4 shadow-sm'>
                             <div class='d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2'>
                                 <div>
-                                    <h5 class='mb-1'><strong>Cliente:</strong> ${clienteInfo.nombre_completo}</h5>
-                                    <p class='mb-0 text-muted'>📱 <strong>Teléfono:</strong> ${clienteInfo.telefono} ${vehiculoDesc ? ' | 🚗 <strong>Vehículo:</strong> ' + vehiculoDesc : ''} | 🚗 <strong>Patente:</strong> <span class='badge bg-dark fs-6'>${clienteInfo.patente}</span></p>
+                                    <h5 class='mb-1 text-primary'><strong>${clienteInfo.nombre_completo}</strong></h5>
+                                    <p class='mb-0 text-muted'>📱 ${clienteInfo.telefono} ${vehiculoDesc ? '<br>🚗 ' + vehiculoDesc : ''} <br>🚗 Patente: <span class='badge bg-dark fs-6 mt-1'>${clienteInfo.patente}</span></p>
                                 </div>
-                                <div class='d-flex gap-2'>
-                                    <button class='btn btn-success btn-sm' onclick='prepararEImprimirCompleto(${JSON.stringify(clienteInfo).replace(/'/g, "&apos;")})'>📋 Imprimir Historial Completo (${mantenimientos.length})</button>
+                                <div class='botones-impresion'>
+                                    <button class='btn btn-success btn-sm' onclick='prepararEImprimirCompleto(${JSON.stringify(clienteInfo).replace(/'/g, "&apos;")})'>📋 Imprimir Historial (${mantenimientos.length})</button>
                                     <button class='btn btn-outline-dark btn-sm' onclick='prepararEImprimirUltimo(${JSON.stringify(clienteInfo).replace(/'/g, "&apos;")})'>📄 Imprimir Último</button>
                                 </div>
                             </div>
@@ -444,20 +494,20 @@
                     if (mantenimientos.length > 0) {
                         mantenimientos.forEach(m => {
                             htmlResultado += `
-                                <li class='list-group-item px-0'>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            📅 <strong>Fecha:</strong> ${m.fecha_actual || '-'} | 🚗 <strong>Km:</strong> ${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'} | 💰 <strong>Costo:</strong> $${m.costo ? Number(m.costo).toLocaleString() : '0'}<br>
-                                            🔧 <strong>Trabajo Realizado:</strong> ${m.trabajo_realizado || '-'}<br>
-                                            🎯 <strong class='text-primary'>Próxima Visita:</strong> ${m.trabajo_proximo || 'No especificado'}<br>
-                                            🔔 <strong class='text-danger'>Fecha Próxima:</strong> ${m.fecha_proximo || 'Sin agendar'} ${m.aviso_enviado ? '✅ (Aviso enviado)' : ''}
+                                <li class='list-group-item px-0 py-3'>
+                                    <div class="d-flex justify-content-between flex-wrap gap-2">
+                                        <div class="w-100">
+                                            📅 <strong>${m.fecha_actual || '-'}</strong> | 🚗 ${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'} | 💰 $${m.costo ? Number(m.costo).toLocaleString() : '0'}<br>
+                                            🔧 <strong>Realizado:</strong> ${m.trabajo_realizado || '-'}<br>
+                                            🎯 <strong class='text-primary'>Próxima:</strong> ${m.trabajo_proximo || 'No especificado'}<br>
+                                            🔔 <strong class='text-danger'>Fecha:</strong> ${m.fecha_proximo || 'Sin agendar'}
                                         </div>
-                                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro(${m.id_servicio})" title="Eliminar este servicio">❌ Eliminar</button>
+                                        <button class="btn btn-sm btn-outline-danger mt-2 w-100" onclick="eliminarRegistro(${m.id_servicio})" title="Eliminar este servicio">🗑️ Eliminar Registro</button>
                                     </div>
                                 </li>`;
                         });
                     } else {
-                        htmlResultado += `<li class='list-group-item text-muted'>No hay mantenimientos registrados para este vehículo.</li>`;
+                        htmlResultado += `<li class='list-group-item text-muted'>No hay mantenimientos.</li>`;
                     }
                     htmlResultado += "</ul></div>";
                 });
@@ -465,20 +515,17 @@
                 contenedor.innerHTML = htmlResultado;
             } else {
                 ultimosRegistrosBuscados = [];
-                contenedor.innerHTML = "<div class='alert alert-warning mt-2'>No se encontraron registros para la búsqueda realizada.</div>";
+                contenedor.innerHTML = "<div class='alert alert-warning mt-2'>No se encontraron registros.</div>";
             }
         } catch (e) {
             contenedor.innerHTML = "<div class='alert alert-danger mt-2'>Error al conectar con el servidor.</div>";
         }
     }
 
-    // --- FUNCION DEL NUEVO BOTON IMPRIMIR GLOBAL ---
     function imprimirHistorialDesdeBuscador() {
         if (!ultimosRegistrosBuscados || ultimosRegistrosBuscados.length === 0) {
-            return alert("Primero busca un vehículo para poder imprimir su historial.");
+            return alert("Busca un vehículo para imprimir su historial.");
         }
-        // Si hay varios resultados (ej: buscaron "Juan"), imprime el primer historial encontrado.
-        // Si buscó patente exacta, siempre será [0].
         prepararEImprimirCompleto(ultimosRegistrosBuscados[0]);
     }
 
@@ -506,7 +553,6 @@
         imprimirUltimoServicio();
     }
 
-    // --- SOLAPA: HISTORIAL GENERAL POR FILTROS ---
     async function buscarHistorial(event) {
         if (event) event.preventDefault();
 
@@ -522,7 +568,7 @@
         });
 
         const tbody = document.getElementById('tabla-historial-body');
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted p-3">Cargando registros...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted p-3">Cargando registros...</td></tr>';
 
         try {
             const response = await fetch(`${API_URL}/api/historial-servicios?${queryParams.toString()}`);
@@ -532,7 +578,7 @@
                 tbody.innerHTML = '';
 
                 if (!resultado.data || resultado.data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted p-3">No se encontraron registros para los criterios ingresados.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted p-3">No hay registros.</td></tr>';
                     return;
                 }
 
@@ -543,13 +589,12 @@
                     fila.innerHTML = `
                         <td>${item.fecha || '-'}</td>
                         <td><strong>${item.cliente || '-'}</strong></td>
-                        <td>${item.telefono || '-'}</td>
                         <td><strong>${item.vehiculo}</strong><br><span class="badge bg-dark">${item.patente || '-'}</span></td>
                         <td>${item.kilometraje ? item.kilometraje.toLocaleString() + ' km' : '-'}</td>
                         <td>${item.trabajo || '-'}</td>
                         <td><span class="${item.fecha_proximo ? 'text-danger fw-bold' : 'text-muted'}">${proximoTxt}</span></td>
                         <td>
-                            <button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro(${item.id})" title="Eliminar Registro">🗑️</button>
+                            <button class="btn btn-sm btn-outline-danger w-100" onclick="eliminarRegistro(${item.id})">🗑️</button>
                         </td>
                     `;
                     tbody.appendChild(fila);
@@ -558,8 +603,7 @@
                 alert('Error al consultar el historial: ' + resultado.message);
             }
         } catch (error) {
-            console.error('Error al realizar la consulta:', error);
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger p-3">Error de conexión al cargar el historial.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger p-3">Error de conexión.</td></tr>';
         }
     }
 
@@ -568,7 +612,6 @@
         buscarHistorial();
     }
 
-    // --- FUNCION ELIMINAR ACTUALIZADA ---
     async function eliminarRegistro(idServicio) {
         if(!confirm('¿Estás seguro de que deseas ELIMINAR este registro para siempre?')) return;
         try {
@@ -576,19 +619,15 @@
             const data = await res.json();
             if(data.exito) {
                 alert('Registro eliminado.');
-                
-                // Actualiza visualmente todo sin tener que recargar la página:
                 if (document.getElementById('buscarPatente').value.trim() !== '') {
-                    buscarPorPatente(); // Refresca pestaña buscador
+                    buscarPorPatente(); 
                 }
-                buscarHistorial(); // Refresca pestaña historial general
-                cargarEstadisticas(); // Refresca la plata del mes
-                
+                buscarHistorial(); 
+                cargarEstadisticas(); 
             } else alert('Error al eliminar registro');
         } catch(e) { alert('Error de conexión.'); }
     }
 
-    // --- IMPRESIÓN ---
     function imprimirHistorialCompleto() {
         if (!vehiculoActualBuscado || !vehiculoActualBuscado.todosMantenimientos || vehiculoActualBuscado.todosMantenimientos.length === 0) {
             return alert("No hay mantenimientos para imprimir.");
@@ -704,7 +743,6 @@
         ventana.document.close();
     }
 
-    // --- GUARDAR NUEVO ---
     document.getElementById('mantenimientoForm').addEventListener('submit', async e => {
         e.preventDefault();
         const datos = {
@@ -745,7 +783,6 @@
         } catch (err) { alert('Error de conexión al guardar.'); }
     });
 
-    // --- LÓGICA DE BIOMETRÍA ESTRICTA Y SEGURA ---
     document.getElementById('btnBiometria').addEventListener('click', async () => {
         const e = localStorage.getItem('taller_email_biometrico');
         const p = localStorage.getItem('taller_pass_biometrico');
