@@ -1,0 +1,16 @@
+name: Ping Automático (Cron Job)
+
+on:
+  schedule:
+    # Formato Cron: minuto hora día mes día-de-semana
+    # Esto corre todos los días a las 10:00 UTC
+    - cron: '0 10 * * *' 
+  workflow_dispatch: # Agrega un botón en GitHub para ejecutarlo manualmente cuando quieras probarlo
+
+jobs:
+  hacer_ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Realizar petición web (Ping)
+        # Aquí usas curl para disparar la URL de tu servidor
+        run: curl -s https://app-mecanico.onrender.com/
