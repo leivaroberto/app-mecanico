@@ -15,21 +15,38 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // 1. LOGIN
 app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
+
     try {
+        // 1. Buscamos al usuario en TU tabla personalizada (ej: usuarios_talleres)
         const { data: usuario, error } = await supabase
             .from('usuarios_talleres')
             .select('*')
-            .eq('email', email.trim())
-            .eq('password', password.trim())
-            .maybeSingle();
+            .eq('email', email)
+            .single(); // Trae un solo registro
 
-        if (error || !usuario) return res.status(401).json({ exito: false, mensaje: 'Credenciales incorrectas.' });
-        res.json({ exito: true, id_taller: usuario.id_taller, nombre_taller: usuario.nombre_taller });
+        // 2. Si hay un error o no se encuentra el correo
+        if (error || !usuario) {
+            return res.status(401).json({ exito: false, mensaje: 'Credenciales incorrectas.' });
+        }
+
+        // 3. Comparamos la contraseña (Asegúrate de que el nombre de la columna coincida)
+        // Nota: Si usas contraseñas encriptadas (bcrypt), aquí usarías bcrypt.compareSync()
+        if (usuario.password !== password) {
+            return res.status(401).json({ exito: false, mensaje: 'Credenciales incorrectas.' });
+        }
+
+        // 4. Si todo es correcto, le damos acceso y enviamos los datos al frontend
+        res.status(200).json({ 
+            exito: true, 
+            id_taller: usuario.id, 
+            nombre_taller: usuario.nombre_taller 
+        });
+
     } catch (err) {
-        res.status(500).json({ exito: false, mensaje: 'Error del servidor.' });
+        console.error(err);
+        res.status(500).json({ exito: false, mensaje: 'Error interno del servidor.' });
     }
 });
-
 // 2. GUARDAR MANTENIMIENTO (CORREGIDO PARA EVITAR DUPLICADOS)
 app.post('/api/guardar-mantenimiento', async (req, res) => {
     const datos = req.body;
