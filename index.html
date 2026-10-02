@@ -339,6 +339,13 @@
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
             });
+            // AÑADE ESTO PARA CAPTURAR EL ERROR REAL:
+const data = await res.json();
+console.log("Respuesta exacta del servidor:", data);
+
+if (!res.ok) {
+  console.error("El servidor rechazó el login con status:", res.status);
+}
             const data = await res.json();
             if (data.exito) {
                 tallerActualId = data.id_taller;
