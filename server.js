@@ -38,7 +38,7 @@ app.post('/api/login', async (req, res) => {
         // 4. Si todo es correcto, le damos acceso y enviamos los datos al frontend
         res.status(200).json({ 
             exito: true, 
-            id_taller: usuario.id, 
+            id_taller: usuario.id_taller, 
             nombre_taller: usuario.nombre_taller 
         });
 
