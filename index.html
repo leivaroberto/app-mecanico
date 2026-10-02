@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+zzzzz<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -331,7 +331,7 @@
         await ejecutarLogin(document.getElementById('loginEmail').value, document.getElementById('loginPassword').value);
     });
 
-    async function ejecutarLogin(email, password) {
+async function ejecutarLogin(email, password) {
         const btn = document.getElementById('btnIngresar');
         btn.disabled = true; btn.innerText = "Verificando...";
         try {
@@ -339,13 +339,14 @@
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
             });
-           const respuestaServidor = await res.json();
-console.log("Respuesta exacta del servidor:", respuestaServidor);
+            
+            // Leemos la respuesta del servidor una única vez
+            const data = await res.json(); 
+            
+            if (!res.ok) {
+                console.error("El servidor rechazó el login:", data);
+            }
 
-if (!res.ok) {
-  console.error("El servidor rechazó el login con status:", res.status);
-}
-            const data = await res.json();
             if (data.exito) {
                 tallerActualId = data.id_taller;
                 nombreTallerActual = data.nombre_taller || "Taller Mecánico";
@@ -358,7 +359,9 @@ if (!res.ok) {
 
                 cargarAvisosSemana();
                 cargarEstadisticas();
-            } else alert(data.mensaje || 'Credenciales incorrectas');
+            } else {
+                alert(data.mensaje || 'Credenciales incorrectas');
+            }
         } catch (error) {
             alert('Error de conexión con el servidor.');
         } finally {
