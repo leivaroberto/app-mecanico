@@ -15,38 +15,21 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // 1. LOGIN
 app.post('/api/login', async (req, res) => {
     const { email, password } = req.body;
-
     try {
-        // 1. Buscamos al usuario en TU tabla personalizada (ej: usuarios_talleres)
         const { data: usuario, error } = await supabase
             .from('usuarios_talleres')
             .select('*')
-            .eq('email', email)
-            .single(); // Trae un solo registro
+            .eq('email', email.trim())
+            .eq('password', password.trim())
+            .maybeSingle();
 
-        // 2. Si hay un error o no se encuentra el correo
-        if (error || !usuario) {
-            return res.status(401).json({ exito: false, mensaje: 'Credenciales incorrectas.' });
-        }
-
-        // 3. Comparamos la contraseña (Asegúrate de que el nombre de la columna coincida)
-        // Nota: Si usas contraseñas encriptadas (bcrypt), aquí usarías bcrypt.compareSync()
-        if (usuario.password !== password) {
-            return res.status(401).json({ exito: false, mensaje: 'Credenciales incorrectas.' });
-        }
-
-        // 4. Si todo es correcto, le damos acceso y enviamos los datos al frontend
-        res.status(200).json({ 
-            exito: true, 
-            id_taller: usuario.id_taller, 
-            nombre_taller: usuario.nombre_taller 
-        });
-
+        if (error || !usuario) return res.status(401).json({ exito: false, mensaje: 'Credenciales incorrectas.' });
+        res.json({ exito: true, id_taller: usuario.id_taller, nombre_taller: usuario.nombre_taller });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ exito: false, mensaje: 'Error interno del servidor.' });
+        res.status(500).json({ exito: false, mensaje: 'Error del servidor.' });
     }
 });
+
 // 2. GUARDAR MANTENIMIENTO (CORREGIDO PARA EVITAR DUPLICADOS)
 app.post('/api/guardar-mantenimiento', async (req, res) => {
     const datos = req.body;
@@ -149,6 +132,35 @@ app.get('/api/registros/buscar', async (req, res) => {
     } catch (err) {
         console.error("Error en búsqueda:", err);
         res.status(500).json({ exito: false, mensaje: 'Error en servidor al realizar la búsqueda.' });
+    }
+});
+
+// Actualizar el teléfono de un cliente del taller
+app.put('/api/clientes/:id/telefono', async (req, res) => {
+    const { id } = req.params;
+    const { telefono, id_taller } = req.body;
+    const telefonoLimpio = typeof telefono === 'string' ? telefono.trim() : '';
+
+    if (!id || !id_taller || !telefonoLimpio) {
+        return res.status(400).json({ exito: false, mensaje: 'Cliente, taller y teléfono son obligatorios.' });
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from('clientes_vehiculos')
+            .update({ telefono: telefonoLimpio })
+            .eq('id_cliente', id)
+            .eq('id_taller', id_taller)
+            .select('id_cliente')
+            .maybeSingle();
+
+        if (error) throw error;
+        if (!data) return res.status(404).json({ exito: false, mensaje: 'No se encontró el cliente en este taller.' });
+
+        res.json({ exito: true, mensaje: 'Teléfono actualizado correctamente.' });
+    } catch (err) {
+        console.error('Error al actualizar el teléfono:', err);
+        res.status(500).json({ exito: false, mensaje: 'Error del servidor al actualizar el teléfono.' });
     }
 });
 

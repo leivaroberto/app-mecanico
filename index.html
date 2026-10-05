@@ -1,4 +1,4 @@
-zzzzz<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -6,8 +6,8 @@ zzzzz<!DOCTYPE html>
     <title>AppMecanico - Panel de Taller</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"> 
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     
     <style>
         /* ESTILOS BASE (PC Y GENERAL) */
@@ -17,6 +17,14 @@ zzzzz<!DOCTYPE html>
         .oculto { display: none !important; }
         .btn-ojo { background: transparent; border: none; color: white; cursor: pointer; padding: 0 5px; font-size: 1.1rem; }
         .btn-ojo:hover { opacity: 0.8; }
+        .lucide { width: 1em; height: 1em; vertical-align: -0.125em; }
+        .lucide-wrench, .lucide-megaphone, .lucide-refresh-cw, .lucide-calendar-clock { color: #d97706; }
+        .lucide-fingerprint, .lucide-chart-column, .lucide-search, .lucide-phone { color: #0d6efd; }
+        .lucide-file-plus-2, .lucide-circle-check, .lucide-dollar-sign, .lucide-message-circle { color: #198754; }
+        .lucide-history { color: #7952b3; }
+        .lucide-calendar-days, .lucide-car-front, .lucide-broom { color: #64748b; }
+        .lucide-bell, .lucide-trash-2 { color: #dc3545; }
+        .btn-ojo .lucide-eye, .btn-ojo .lucide-eye-off, .btn-success .lucide { color: #fff; }
         .btn-biometria { font-weight: 500; transition: all 0.3s ease; }
         .btn-biometria:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         
@@ -28,11 +36,11 @@ zzzzz<!DOCTYPE html>
             .botones-impresion { display: flex; gap: 8px; }
         }
 
-        /* 📱 AJUSTES PERFECTOS PARA CELULAR */
+        /* AJUSTES PARA CELULAR */
         @media (max-width: 768px) {
             body { padding-top: 10px; }
-            .container { margin-top: 0 !important; padding-left: 10px; padding-right: 10px; }
-            .card { padding: 1.2rem !important; }
+            .container { width: 100%; max-width: none; margin-top: 0 !important; padding-left: 4px; padding-right: 4px; }
+            .card { padding: 0.75rem !important; }
             
             /* Solapas Deslizables (Scroll Horizontal) */
             .nav-tabs {
@@ -81,7 +89,7 @@ zzzzz<!DOCTYPE html>
     <div id="seccionLogin" class="row justify-content-center mt-5">
         <div class="col-md-5">
             <div class="card p-4 text-center">
-                <h2 class="header-title mb-1">🔧 AppMecanico</h2>
+                <h2 class="header-title mb-1"><i data-lucide="wrench"></i> AppMecanico</h2>
                 <p class="text-muted mb-4">Acceso Seguro de Taller</p>
                 <form id="loginForm" class="text-start">
                     <div class="mb-3">
@@ -90,13 +98,18 @@ zzzzz<!DOCTYPE html>
                     </div>
                     <div class="mb-4">
                         <label class="form-label">Contraseña</label>
-                        <input type="password" class="form-control" id="loginPassword" placeholder="******" required>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="loginPassword" placeholder="******" required>
+                            <button type="button" class="btn btn-outline-secondary" id="btnToggleLoginPassword" onclick="toggleLoginPassword()" aria-label="Mostrar contraseña" aria-controls="loginPassword" aria-pressed="false" title="Mostrar contraseña">
+                                <i data-lucide="eye"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="d-grid gap-2">
                         <button type="submit" id="btnIngresar" class="btn btn-dark btn-lg">Ingresar con Clave</button>
                         
                         <button type="button" id="btnBiometria" class="btn btn-outline-secondary btn-biometria mt-2 d-flex align-items-center justify-content-center gap-2">
-                            <i class="bi bi-fingerprint fs-3 text-primary"></i> 
+                            <i data-lucide="fingerprint" class="fs-3 text-primary"></i>
                             <span>Entrar con Huella / Face ID</span>
                         </button>
                     </div>
@@ -108,23 +121,23 @@ zzzzz<!DOCTYPE html>
     <!-- APP PRINCIPAL -->
     <div id="seccionApp" class="oculto">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2 id="tituloTaller" class="header-title mb-0">🔧 Taller Mecánico</h2>
+            <h2 id="tituloTaller" class="header-title mb-0"><i data-lucide="wrench"></i> Taller Mecánico</h2>
             <button id="btnCerrarSesion" class="btn btn-outline-danger btn-sm">Salir</button>
         </div>
 
         <!-- SOLAPAS CON FORMATO RESPONSIVO -->
         <ul class="nav nav-tabs mb-4" id="appTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab">📊 Inicio</button>
+                <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab"><i data-lucide="chart-column"></i> Inicio</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="buscar-tab" data-bs-toggle="tab" data-bs-target="#buscar" type="button" role="tab">🔍 Buscar Vehículo</button>
+                <button class="nav-link" id="buscar-tab" data-bs-toggle="tab" data-bs-target="#buscar" type="button" role="tab"><i data-lucide="search"></i> Buscar Vehículo</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="nuevo-tab" data-bs-toggle="tab" data-bs-target="#nuevo" type="button" role="tab">📝 Nuevo Servicio</button>
+                <button class="nav-link" id="nuevo-tab" data-bs-toggle="tab" data-bs-target="#nuevo" type="button" role="tab"><i data-lucide="file-plus-2"></i> Nuevo Servicio</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="historial-tab" data-bs-toggle="tab" data-bs-target="#historial" type="button" role="tab" onclick="buscarHistorial()">📋 Historial</button>
+                <button class="nav-link" id="historial-tab" data-bs-toggle="tab" data-bs-target="#historial" type="button" role="tab" onclick="buscarHistorial()"><i data-lucide="history"></i> Historial</button>
             </li>  
         </ul>
 
@@ -143,7 +156,7 @@ zzzzz<!DOCTYPE html>
                         <div class="card bg-success text-white p-3 text-center position-relative h-100 justify-content-center">
                             <div class="d-flex justify-content-center align-items-center gap-2 mb-2">
                                 <h6 class="mb-0">Ingresos Generados este Mes</h6>
-                                <button type="button" class="btn-ojo" id="btnToggleIngresos" onclick="togglePrivacidadIngresos()" title="Ocultar/Mostrar monto">👁️</button>
+                                <button type="button" class="btn-ojo" id="btnToggleIngresos" onclick="togglePrivacidadIngresos()" title="Ocultar/Mostrar monto"><i data-lucide="eye"></i></button>
                             </div>
                             <h2 id="statIngresos" class="mb-0">$ --</h2>
                         </div>
@@ -152,8 +165,8 @@ zzzzz<!DOCTYPE html>
 
                 <div class="card shadow-sm mb-4">
                     <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0 fw-bold">🔔 Avisos de la Semana</h6>
-                        <button class="btn btn-sm btn-outline-dark" onclick="cargarAvisosSemana()">🔄 Actualizar</button>
+                        <h6 class="mb-0 fw-bold"><i data-lucide="megaphone"></i> Avisos de la Semana</h6>
+                        <button class="btn btn-sm btn-outline-dark" onclick="cargarAvisosSemana()"><i data-lucide="refresh-cw"></i> Actualizar</button>
                     </div>
                     <div class="card-body p-0 p-md-3">
                         <div class="table-responsive">
@@ -174,10 +187,10 @@ zzzzz<!DOCTYPE html>
             <div class="tab-pane fade" id="buscar" role="tabpanel">
                 <div class="card p-4 mb-4 bg-light">
                     <div class="d-flex justify-content-between align-items-center mb-3 buscador-header">
-                        <h5 class="header-title mb-0">🔍 Buscador Vehicular</h5>
+                        <h5 class="header-title mb-0"><i data-lucide="search"></i> Buscador Vehicular</h5>
                         <div class="botones-impresion">
-                            <button class="btn btn-success" onclick="imprimirHistorialDesdeBuscador()">🖨️ Imprimir Todo</button>
-                            <button class="btn btn-secondary" onclick="limpiarBusqueda()">❌ Limpiar</button>
+                            <button class="btn btn-success" onclick="imprimirHistorialDesdeBuscador()"><i data-lucide="printer"></i> Imprimir Todo</button>
+                            <button class="btn btn-secondary" onclick="limpiarBusqueda()"><i data-lucide="broom"></i> Limpiar</button>
                         </div>
                     </div>
                     
@@ -259,7 +272,7 @@ zzzzz<!DOCTYPE html>
             <!-- HISTORIAL GENERAL -->
             <div class="tab-pane fade" id="historial" role="tabpanel">
                 <div class="card p-4">
-                    <h4 class="mb-3">📋 Historial General</h4>
+                    <h4 class="mb-3"><i data-lucide="history"></i> Historial General</h4>
                     
                     <div class="card p-3 bg-light mb-4 border-0">
                         <form id="form-filtro-historial" onsubmit="buscarHistorial(event)" class="row g-3 align-items-end">
@@ -276,7 +289,7 @@ zzzzz<!DOCTYPE html>
                                 <input type="date" id="filtro-fecha-fin" class="form-control">
                             </div>
                             <div class="col-md-3 col-12 d-flex gap-2">
-                                <button type="submit" class="btn btn-primary flex-grow-1">🔍 Buscar</button>
+                                <button type="submit" class="btn btn-primary flex-grow-1"><i data-lucide="search"></i> Buscar</button>
                                 <button type="button" onclick="limpiarFiltrosHistorial()" class="btn btn-secondary">Limpiar</button>
                             </div>
                         </form>
@@ -312,6 +325,8 @@ zzzzz<!DOCTYPE html>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
+    lucide.createIcons();
+
     const API_URL = 'https://app-mecanico.onrender.com';
     let tallerActualId = null;
     let nombreTallerActual = "Taller Mecánico";
@@ -322,6 +337,76 @@ zzzzz<!DOCTYPE html>
     let ingresosMontoReal = 0;
     let ingresosOcultos = false;
 
+    document.getElementById('resultadoBusqueda').addEventListener('click', async event => {
+        const boton = event.target.closest('button[data-accion-telefono]');
+        if (!boton) return;
+
+        const tarjeta = boton.closest('[data-tarjeta-cliente]');
+        const editor = tarjeta.querySelector('.editor-telefono');
+        const estado = editor.querySelector('.estado-telefono');
+
+        if (boton.dataset.accionTelefono === 'editar') {
+            const cliente = ultimosRegistrosBuscados.find(registro =>
+                String(registro.id_cliente) === boton.dataset.clienteId
+            );
+            if (!cliente) {
+                estado.textContent = 'No se encontró el cliente seleccionado.';
+                estado.className = 'estado-telefono small text-danger';
+                editor.classList.remove('oculto');
+                return;
+            }
+
+            editor.querySelector('.nuevo-telefono').value = cliente.telefono || '';
+            estado.textContent = '';
+            editor.classList.remove('oculto');
+            editor.querySelector('.nuevo-telefono').focus();
+            return;
+        }
+
+        const cliente = ultimosRegistrosBuscados.find(registro =>
+            String(registro.id_cliente) === boton.dataset.clienteId
+        );
+        const telefono = editor.querySelector('.nuevo-telefono').value.trim();
+        if (!cliente || !telefono) {
+            estado.textContent = cliente ? 'Ingrese un número de teléfono.' : 'No se encontró el cliente seleccionado.';
+            estado.className = 'estado-telefono small text-danger';
+            return;
+        }
+
+        boton.disabled = true;
+        estado.textContent = 'Guardando teléfono...';
+        estado.className = 'estado-telefono small text-muted';
+        try {
+            const res = await fetch(`${API_URL}/api/clientes/${encodeURIComponent(cliente.id_cliente)}/telefono`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ telefono, id_taller: tallerActualId })
+            });
+            const respuesta = await res.text();
+            let data;
+            try {
+                data = JSON.parse(respuesta);
+            } catch {
+                throw new Error(`El servidor no reconoce la ruta para modificar teléfonos (HTTP ${res.status}). Es necesario desplegar la versión actualizada del backend.`);
+            }
+            if (!res.ok || !data.exito) {
+                throw new Error(data.mensaje || 'No se pudo actualizar el teléfono.');
+            }
+
+            cliente.telefono = telefono;
+            tarjeta.querySelector('.telefono-visible').textContent = telefono;
+            editor.classList.add('oculto');
+            estado.textContent = '';
+            alert('Teléfono actualizado correctamente.');
+        } catch (error) {
+            console.error('Error al modificar el teléfono:', error);
+            estado.textContent = error.message || 'Error de conexión al actualizar el teléfono.';
+            estado.className = 'estado-telefono small text-danger';
+        } finally {
+            boton.disabled = false;
+        }
+    });
+
     window.addEventListener('DOMContentLoaded', () => {
         if (!window.PublicKeyCredential) document.getElementById('btnBiometria').style.display = 'none';
     });
@@ -331,7 +416,19 @@ zzzzz<!DOCTYPE html>
         await ejecutarLogin(document.getElementById('loginEmail').value, document.getElementById('loginPassword').value);
     });
 
-async function ejecutarLogin(email, password) {
+    function toggleLoginPassword() {
+        const input = document.getElementById('loginPassword');
+        const button = document.getElementById('btnToggleLoginPassword');
+        const mostrar = input.type === 'password';
+        input.type = mostrar ? 'text' : 'password';
+        button.innerHTML = `<i data-lucide="${mostrar ? 'eye-off' : 'eye'}"></i>`;
+        button.setAttribute('aria-label', mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña');
+        button.setAttribute('title', mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña');
+        button.setAttribute('aria-pressed', String(mostrar));
+        lucide.createIcons();
+    }
+
+    async function ejecutarLogin(email, password) {
         const btn = document.getElementById('btnIngresar');
         btn.disabled = true; btn.innerText = "Verificando...";
         try {
@@ -339,29 +436,21 @@ async function ejecutarLogin(email, password) {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
             });
-            
-            // Leemos la respuesta del servidor una única vez
-            const data = await res.json(); 
-            
-            if (!res.ok) {
-                console.error("El servidor rechazó el login:", data);
-            }
-
+            const data = await res.json();
             if (data.exito) {
                 tallerActualId = data.id_taller;
                 nombreTallerActual = data.nombre_taller || "Taller Mecánico";
                 localStorage.setItem('taller_email_biometrico', email);
                 localStorage.setItem('taller_pass_biometrico', password);
                 
-                document.getElementById('tituloTaller').innerText = "🔧 " + nombreTallerActual;
+                document.getElementById('tituloTaller').innerHTML = `<i data-lucide="wrench"></i> ${nombreTallerActual}`;
+                lucide.createIcons();
                 document.getElementById('seccionLogin').classList.add('oculto');
                 document.getElementById('seccionApp').classList.remove('oculto');
 
                 cargarAvisosSemana();
                 cargarEstadisticas();
-            } else {
-                alert(data.mensaje || 'Credenciales incorrectas');
-            }
+            } else alert(data.mensaje || 'Credenciales incorrectas');
         } catch (error) {
             alert('Error de conexión con el servidor.');
         } finally {
@@ -391,11 +480,12 @@ async function ejecutarLogin(email, password) {
         const btn = document.getElementById('btnToggleIngresos');
         if (ingresosOcultos) {
             elem.innerText = '$ ****';
-            btn.innerText = '🙈';
+            btn.innerHTML = '<i data-lucide="eye-off"></i>';
         } else {
             elem.innerText = `$ ${ingresosMontoReal.toLocaleString()}`;
-            btn.innerText = '👁️';
+            btn.innerHTML = '<i data-lucide="eye"></i>';
         }
+        lucide.createIcons();
     }
 
     async function cargarAvisosSemana() {
@@ -404,7 +494,11 @@ async function ejecutarLogin(email, password) {
         try {
             const res = await fetch(`${API_URL}/avisos-semana?id_taller=${tallerActualId}`);
             const avisos = await res.json();
-            if (!avisos || !avisos.length) return tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success p-3">¡Sin vencimientos pendientes! 🎉</td></tr>';
+            if (!avisos || !avisos.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success p-3"><i data-lucide="circle-check"></i> ¡Sin vencimientos pendientes!</td></tr>';
+                lucide.createIcons();
+                return;
+            }
             
             tbody.innerHTML = avisos.map(i => {
                 const nombre = i.clientes?.nombre || 'Sin nombre';
@@ -421,9 +515,10 @@ async function ejecutarLogin(email, password) {
                     <td><strong>${nombre}</strong></td>
                     <td>${vehiculoDesc ? '<strong>'+vehiculoDesc+'</strong><br>' : ''}<span class="badge bg-secondary">${pat}</span></td>
                     <td><strong class="text-primary">${servicio}</strong></td>
-                    <td>${tel ? `<button onclick="enviarWhatsAppYMarcar(${i.id}, '${tel.replace(/\D/g, '')}', '${mje}')" class="btn btn-sm btn-success w-100">📲 WA</button>` : '<span class="text-muted">Sin teléfono</span>'}</td>
+                    <td>${tel ? `<button onclick="enviarWhatsAppYMarcar(${i.id}, '${tel.replace(/\D/g, '')}', '${mje}')" class="btn btn-sm btn-success w-100"><i data-lucide="message-circle"></i> WhatsApp</button>` : '<span class="text-muted">Sin teléfono</span>'}</td>
                 </tr>`;
             }).join('');
+            lucide.createIcons();
         } catch (e) { tbody.innerHTML = '<tr><td colspan="5" class="text-danger text-center">Error al consultar avisos.</td></tr>'; }
     }
 
@@ -440,7 +535,8 @@ async function ejecutarLogin(email, password) {
 
             const tbody = document.getElementById('tablaAvisosBody');
             if(tbody.children.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success p-3">¡Sin vencimientos pendientes! 🎉</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-success p-3"><i data-lucide="circle-check"></i> ¡Sin vencimientos pendientes!</td></tr>';
+                lucide.createIcons();
             }
         } catch(e) { console.error("Error al marcar aviso:", e); }
     }
@@ -485,15 +581,22 @@ async function ejecutarLogin(email, password) {
                     const vehiculoDesc = `${clienteInfo.marca || ''} ${clienteInfo.modelo || ''}`.trim();
 
                     htmlResultado += `
-                        <div class='card p-3 border-secondary mb-4 shadow-sm'>
+                        <div class='card p-3 border-secondary mb-4 shadow-sm' data-tarjeta-cliente>
                             <div class='d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2'>
                                 <div>
                                     <h5 class='mb-1 text-primary'><strong>${clienteInfo.nombre_completo}</strong></h5>
-                                    <p class='mb-0 text-muted'>📱 ${clienteInfo.telefono} ${vehiculoDesc ? '<br>🚗 ' + vehiculoDesc : ''} <br>🚗 Patente: <span class='badge bg-dark fs-6 mt-1'>${clienteInfo.patente}</span></p>
+                                    <p class='mb-0 text-muted'><i data-lucide="phone"></i> <span class='telefono-visible'>${clienteInfo.telefono || 'Sin teléfono'}</span> <button type='button' class='btn btn-sm btn-outline-primary ms-1' data-accion-telefono='editar' data-cliente-id='${String(clienteInfo.id_cliente)}' title='Modificar teléfono'>Modificar teléfono</button> ${vehiculoDesc ? '<br><i data-lucide="car-front"></i> ' + vehiculoDesc : ''} <br><i data-lucide="car-front"></i> Patente: <span class='badge bg-dark fs-6 mt-1'>${clienteInfo.patente}</span></p>
+                                    <div class='editor-telefono oculto mt-2'>
+                                        <div class='input-group input-group-sm'>
+                                            <input type='tel' class='form-control nuevo-telefono' aria-label='Nuevo número de teléfono' placeholder='Nuevo número de teléfono'>
+                                            <button type='button' class='btn btn-primary' data-accion-telefono='guardar' data-cliente-id='${String(clienteInfo.id_cliente)}'>Guardar</button>
+                                        </div>
+                                        <div class='estado-telefono small mt-1' role='status' aria-live='polite'></div>
+                                    </div>
                                 </div>
                                 <div class='botones-impresion'>
-                                    <button class='btn btn-success btn-sm' onclick='prepararEImprimirCompleto(${JSON.stringify(clienteInfo).replace(/'/g, "&apos;")})'>📋 Imprimir Historial (${mantenimientos.length})</button>
-                                    <button class='btn btn-outline-dark btn-sm' onclick='prepararEImprimirUltimo(${JSON.stringify(clienteInfo).replace(/'/g, "&apos;")})'>📄 Imprimir Último</button>
+                                    <button class='btn btn-success btn-sm' onclick='prepararEImprimirCompleto(${JSON.stringify(clienteInfo).replace(/'/g, "&apos;")})'><i data-lucide="printer"></i> Imprimir Historial (${mantenimientos.length})</button>
+                                    <button class='btn btn-outline-dark btn-sm' onclick='prepararEImprimirUltimo(${JSON.stringify(clienteInfo).replace(/'/g, "&apos;")})'><i data-lucide="printer"></i> Imprimir Último</button>
                                 </div>
                             </div>
 
@@ -506,12 +609,12 @@ async function ejecutarLogin(email, password) {
                                 <li class='list-group-item px-0 py-3'>
                                     <div class="d-flex justify-content-between flex-wrap gap-2">
                                         <div class="w-100">
-                                            📅 <strong>${m.fecha_actual || '-'}</strong> | 🚗 ${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'} | 💰 $${m.costo ? Number(m.costo).toLocaleString() : '0'}<br>
-                                            🔧 <strong>Realizado:</strong> ${m.trabajo_realizado || '-'}<br>
-                                            🎯 <strong class='text-primary'>Próxima:</strong> ${m.trabajo_proximo || 'No especificado'}<br>
-                                            🔔 <strong class='text-danger'>Fecha:</strong> ${m.fecha_proximo || 'Sin agendar'}
+                                            <i data-lucide="calendar-days"></i> <strong>${m.fecha_actual || '-'}</strong> | <i data-lucide="car-front"></i> ${m.kilometraje ? m.kilometraje.toLocaleString() + ' km' : '-'} | <i data-lucide="dollar-sign"></i> $${m.costo ? Number(m.costo).toLocaleString() : '0'}<br>
+                                            <i data-lucide="wrench"></i> <strong>Realizado:</strong> ${m.trabajo_realizado || '-'}<br>
+                                            <i data-lucide="calendar-clock"></i> <strong class='text-primary'>Próxima:</strong> ${m.trabajo_proximo || 'No especificado'}<br>
+                                            <i data-lucide="bell"></i> <strong class='text-danger'>Fecha:</strong> ${m.fecha_proximo || 'Sin agendar'}
                                         </div>
-                                        <button class="btn btn-sm btn-outline-danger mt-2 w-100" onclick="eliminarRegistro(${m.id_servicio})" title="Eliminar este servicio">🗑️ Eliminar Registro</button>
+                                        <button class="btn btn-sm btn-outline-danger mt-2 w-100" onclick="eliminarRegistro(${m.id_servicio})" title="Eliminar este servicio"><i data-lucide="trash-2"></i> Eliminar Registro</button>
                                     </div>
                                 </li>`;
                         });
@@ -522,6 +625,7 @@ async function ejecutarLogin(email, password) {
                 });
 
                 contenedor.innerHTML = htmlResultado;
+                lucide.createIcons();
             } else {
                 ultimosRegistrosBuscados = [];
                 contenedor.innerHTML = "<div class='alert alert-warning mt-2'>No se encontraron registros.</div>";
@@ -603,11 +707,12 @@ async function ejecutarLogin(email, password) {
                         <td>${item.trabajo || '-'}</td>
                         <td><span class="${item.fecha_proximo ? 'text-danger fw-bold' : 'text-muted'}">${proximoTxt}</span></td>
                         <td>
-                            <button class="btn btn-sm btn-outline-danger w-100" onclick="eliminarRegistro(${item.id})">❌</button>
+                            <button class="btn btn-sm btn-outline-danger w-100" onclick="eliminarRegistro(${item.id})" title="Eliminar registro"><i data-lucide="trash-2"></i></button>
                         </td>
                     `;
                     tbody.appendChild(fila);
                 });
+                lucide.createIcons();
             } else {
                 alert('Error al consultar el historial: ' + resultado.message);
             }
@@ -706,7 +811,7 @@ async function ejecutarLogin(email, password) {
             </head>
             <body>
                 <div class="header">
-                    <h2>🔧 ${nombreTallerActual}</h2>
+                    <h2><i data-lucide="wrench"></i> ${nombreTallerActual}</h2>
                     <h3>${tituloDocumento}</h3>
                 </div>
 
@@ -740,12 +845,14 @@ async function ejecutarLogin(email, password) {
                 </table>
 
                 <div class="footer">
-                    <p>Documento generado por AppMecanico para <strong>${nombreTallerActual}</strong> | ${new Date().toLocaleDateString('es-AR')}</p>
+                    <p>Documento generado por AppMecanico para <strong>${nombreTallerActual}</strong> | ${new Date().toLocaleDateString('es-AR')} - No válido como comprobante de pago</p>
                 </div>
 
                 <script>
                     window.onload = function() { window.print(); };
                 <\/script>
+                <script src="https://unpkg.com/lucide@latest"><\/script>
+                <script>lucide.createIcons();<\/script>
             </body>
             </html>
         `);
