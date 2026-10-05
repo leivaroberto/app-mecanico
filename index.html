@@ -27,6 +27,7 @@
         .btn-ojo .lucide-eye, .btn-ojo .lucide-eye-off, .btn-success .lucide { color: #fff; }
         .btn-biometria { font-weight: 500; transition: all 0.3s ease; }
         .btn-biometria:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .historial-realizado { width: 30%; min-width: 280px; }
         
         /* Estilos Tabs en PC */
         @media (min-width: 769px) {
@@ -303,7 +304,7 @@
                                     <th>Cliente</th>
                                     <th>Vehículo / Patente</th>
                                     <th>Km</th>
-                                    <th>Realizado</th>
+                                    <th class="historial-realizado">Realizado</th>
                                     <th>Próximo</th>
                                     <th></th> 
                                 </tr>
@@ -704,7 +705,7 @@
                         <td><strong>${item.cliente || '-'}</strong></td>
                         <td><strong>${item.vehiculo}</strong><br><span class="badge bg-dark">${item.patente || '-'}</span></td>
                         <td>${item.kilometraje ? item.kilometraje.toLocaleString() + ' km' : '-'}</td>
-                        <td>${item.trabajo || '-'}</td>
+                        <td class="historial-realizado">${item.trabajo || '-'}</td>
                         <td><span class="${item.fecha_proximo ? 'text-danger fw-bold' : 'text-muted'}">${proximoTxt}</span></td>
                         <td>
                             <button class="btn btn-sm btn-outline-danger w-100" onclick="eliminarRegistro(${item.id})" title="Eliminar registro"><i data-lucide="trash-2"></i></button>
