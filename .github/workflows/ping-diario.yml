@@ -4,7 +4,7 @@ on:
   schedule:
     # Formato Cron: minuto hora día mes día-de-semana
     # Esto corre todos los días a las 10:00 UTC
-    - cron: '0 10 * * *' 
+    - cron: '37 4 * * *'
   workflow_dispatch: # Agrega un botón en GitHub para ejecutarlo manualmente cuando quieras probarlo
 
 jobs:
@@ -13,4 +13,4 @@ jobs:
     steps:
       - name: Realizar petición web (Ping)
         # Aquí usas curl para disparar la URL de tu servidor
-        run: curl -s https://app-mecanico.onrender.com/
+        run: curl -fsSL --retry 3 --retry-delay 5 https://app-mecanico.onrender.com/
