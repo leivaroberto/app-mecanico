@@ -8,6 +8,14 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+app.get(['/', '/health'], (req, res) => {
+    res.status(200).json({
+        ok: true,
+        servicio: 'AppMecanico',
+        timestamp: new Date().toISOString()
+    });
+});
+
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
